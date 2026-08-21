@@ -1,72 +1,68 @@
-package frc.robot.subsystems;
+package frc.robot.subsystems.intake;
 
-import com.ctre.phoenix6.configs.MotionMagicConfigs;
-import com.ctre.phoenix6.configs.Slot0Configs;
+import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Rotations;
+
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
-import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.ctre.phoenix6.sim.TalonFXSimState.MotorType;
 
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.DutyCycleEncoder;
-import edu.wpi.first.wpilibj.motorcontrol.Spark;
-
-import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.DegreesPerSecond;
-import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
-import static edu.wpi.first.units.Units.MetersPerSecond;
-import static edu.wpi.first.units.Units.Rotations;
-import static edu.wpi.first.units.Units.Volts;
 
 public class IntakePivot {
-    private final TalonFX intakePivotMotor;
-    private final CANcoder intakePivotEncoder;
-    private final TalonFXConfiguration config;
+  private final TalonFX m_motor;
+  private final CANcoder m_encoder;
+  private final MotionMagicVoltage m_positionRequest = new MotionMagicVoltage(0);
 
-    public enum State {
-        START(Degrees.of(115)),
-        INTAKING(Degrees.of(0)),
-        NOTINTAKING(Degrees.of(90));
+  public enum State {
+    START(Degrees.of(115)),
+    INTAKING(Degrees.of(0)),
+    NOT_INTAKING(Degrees.of(90));
+
+    private final Angle m_angle;
+
+    State(Angle angle) {
+      m_angle = angle;
     }
 
-    public IntakePivot(int intakePivotMotorId, int encoderId) {
-        intakePivotMotor = new TalonFX(intakePivotMotorId);
-        intakePivotEncoder = new CANcoder(encoderId);
-        
-        config = new TalonFXConfiguration();
-        
-        config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
-        config.Feedback.SensorToMechanismRatio = 0.0237; // Constants file imports being weird, temp hardcode
-        config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
-
-        config.CurrentLimits.StatorCurrentLimit = Amps.of(120);
-        config.CurrentLimits.StatorCurrentLimitEnable = true;
-        config.CurrentLimits.SupplyCurrentLimit = Amps.of(70);
-        config.CurrentLimits.SupplyCurrentLimitEnable = true;
-
-        config.SoftwareLimitSwitch.ForwardSoftLimitThreshold = Rotations.fromBaseUnits(Degrees.toBaseUnits(90));
-        config.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
-
-
+    public Angle angle() {
+      return m_angle;
     }
+  }
 
-    public setAngle(Angle newAngle) {
-        intakePivotMotor.setPosition(newAngle);
-    }
+  public IntakePivot(int motorId, int encoderId) {
+    m_motor = new TalonFX(motorId);
+    m_encoder = new CANcoder(encoderId);
 
-    public double getAngle() {
-        return intakePivotEncoder.get() * kIntakePivotReduction;
-    }
+    TalonFXConfiguration config = new TalonFXConfiguration();
+    config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+    config.Feedback.SensorToMechanismRatio = 0.0237;
+    config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
 
-    public void start() {
-        setAngle();
-    }
+    config.CurrentLimits.StatorCurrentLimit = Amps.of(120).in(Amps);
+    config.CurrentLimits.StatorCurrentLimitEnable = true;
+    config.CurrentLimits.SupplyCurrentLimit = Amps.of(70).in(Amps);
+    config.CurrentLimits.SupplyCurrentLimitEnable = true;
 
+    config.SoftwareLimitSwitch.ForwardSoftLimitThreshold = Degrees.of(90).in(Rotations);
+    config.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+
+    m_motor.getConfigurator().apply(config);
+  }
+
+  public void setAngle(Angle angle) {
+    m_motor.setControl(m_positionRequest.withPosition(angle.in(Rotations)));
+  }
+
+  public Angle getAngle() {
+    return m_encoder.getAbsolutePosition().getValue();
+  }
+
+  public void start() {
+    setAngle(State.START.angle());
+  }
 }
