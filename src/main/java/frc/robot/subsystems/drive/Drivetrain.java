@@ -92,9 +92,6 @@ public class Drivetrain extends SubsystemBase {
     // Usage reporting for swerve template
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_AdvantageKit);
 
-    // Start odometry thread
-    PhoenixOdometryThread.getInstance().start();
-
     // Configure SysId
     sysId = new SysIdRoutine(
         new SysIdRoutine.Config(

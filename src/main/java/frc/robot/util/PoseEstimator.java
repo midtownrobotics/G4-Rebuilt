@@ -29,9 +29,6 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
-import frc.robot.util.Constants;
-import frc.robot.constants.FieldConstants;
-import lombok.Getter;
 
 /**
  * Custom pose estimator that fuses swerve odometry with vision observations
@@ -42,9 +39,7 @@ public class PoseEstimator {
   private static final double kPoseBufferSizeSec = 2.0;
   private static final Matrix<N3, N1> kOdometryStdDevs = new Matrix<>(VecBuilder.fill(1, 1, 0.2));
 
-  @Getter
   private Pose2d odometryPose = Pose2d.kZero;
-  @Getter
   private Pose2d estimatedPose = Pose2d.kZero;
 
   private final TimeInterpolatableBuffer<Pose2d> poseBuffer = TimeInterpolatableBuffer.createBuffer(kPoseBufferSizeSec);
@@ -84,6 +79,14 @@ public class PoseEstimator {
   /** Get the rotation of the estimated pose. */
   public Rotation2d getRotation() {
     return estimatedPose.getRotation();
+  }
+
+  public Pose2d getOdometryPose() {
+    return odometryPose;
+  }
+
+  public Pose2d getEstimatedPose() {
+    return estimatedPose;
   }
 
   /** Adds a new odometry observation from the drive subsystem. */
@@ -137,11 +140,10 @@ public class PoseEstimator {
 
     double cosTheta = Math.abs(pose.getRotation().getCos());
     double sinTheta = Math.abs(pose.getRotation().getSin());
-    double robotLength = Constants.kRobotLengthWithBumpers.in(Meters);
-    double robotWidth = Constants.kRobotWidthWithBumpers.in(Meters);
-
-    double offsetX = (robotLength * cosTheta + robotWidth * sinTheta) / 2.0;
-    double offsetY = (robotLength * sinTheta + robotWidth * cosTheta) / 2.0;
+    // Robot bumper dimensions have not been measured for G4 yet. Clamp the
+    // robot center to the field until those dimensions are available.
+    double offsetX = 0.0;
+    double offsetY = 0.0;
 
 		 
 			return new Pose2d(
