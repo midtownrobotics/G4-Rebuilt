@@ -4,6 +4,11 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Rotations;
 
+import java.security.Key;
+
+import org.littletonrobotics.junction.AutoLog;
+import org.littletonrobotics.junction.AutoLogOutput;
+
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
@@ -11,12 +16,18 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.units.AngularVelocityUnit;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularAcceleration;
+import edu.wpi.first.units.measure.Current;
 
 public class IntakePivot {
   private final TalonFX m_motor;
   private final CANcoder m_encoder;
   private final MotionMagicVoltage m_positionRequest = new MotionMagicVoltage(0);
+
+  @AutoLogOutput (key = "IntakePivot/State")
+  private State state = State.START;
 
   public enum State {
     START(Degrees.of(115)),
@@ -58,8 +69,19 @@ public class IntakePivot {
     m_motor.setControl(m_positionRequest.withPosition(angle.in(Rotations)));
   }
 
+  @AutoLogOutput (key = "IntakePivot/Angle")
   public Angle getAngle() {
     return m_encoder.getAbsolutePosition().getValue();
+  }
+
+  @AutoLogOutput (key = "IntakePivot/Voltage")
+  public Voltage getVoltage() {
+    return m_encoder.getSupplyVoltage();
+  }
+
+  @AutoLogOutput (key = "IntakePivot/AngularVelocity")
+  public AngularVelocity getVelocity() {
+    return m_encoder.getVelocity();
   }
 
   public void start() {
