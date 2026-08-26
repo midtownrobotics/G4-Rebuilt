@@ -16,6 +16,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -63,6 +64,9 @@ public class IntakePivot {
     config.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
 
     m_motor.getConfigurator().apply(config);
+
+    Logger.recordOutput("IntakePivot/AbsolutePosition", m_encoder.getAbsolutePosition());
+    Logger.recordOutput("IntakePivot/CurrentSpike", SubsystemBase.isCurrentSpiking());
   }
 
   public void setAngle(Angle angle) {
