@@ -11,12 +11,10 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.Autos;
 import frc.robot.commands.ExampleCommand;
-import frc.robot.subsystems.ExampleSubsystem;
 
 public class Robot extends TimedRobot {
   private Command m_autonomousCommand;
 
-  private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
   private final CommandXboxController m_driverController =
       new CommandXboxController(0);
 
@@ -25,14 +23,6 @@ public class Robot extends TimedRobot {
   }
 
   private void configureBindings() {
-    new Trigger(m_exampleSubsystem::exampleCondition)
-        .onTrue(new ExampleCommand(m_exampleSubsystem));
-
-    m_driverController.b().whileTrue(m_exampleSubsystem.exampleMethodCommand());
-  }
-
-  private Command getAutonomousCommand() {
-    return Autos.exampleAuto(m_exampleSubsystem);
   }
 
   @Override
@@ -42,11 +32,6 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousInit() {
-    m_autonomousCommand = getAutonomousCommand();
-
-    if (m_autonomousCommand != null) {
-      CommandScheduler.getInstance().schedule(m_autonomousCommand);
-    }
   }
 
   @Override
