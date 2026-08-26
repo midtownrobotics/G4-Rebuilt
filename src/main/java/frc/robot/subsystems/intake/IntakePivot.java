@@ -4,6 +4,8 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Rotations;
 
+import java.time.chrono.ThaiBuddhistChronology;
+
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
@@ -22,7 +24,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Voltage;
 
-public class IntakePivot {
+public class IntakePivot extends SubsystemBase{
   private final TalonFX m_motor;
   private final CANcoder m_encoder;
   private final MotionMagicVoltage m_positionRequest = new MotionMagicVoltage(0);
@@ -65,8 +67,7 @@ public class IntakePivot {
 
     m_motor.getConfigurator().apply(config);
 
-    Logger.recordOutput("IntakePivot/AbsolutePosition", m_encoder.getAbsolutePosition());
-    Logger.recordOutput("IntakePivot/CurrentSpike", SubsystemBase.isCurrentSpiking());
+    Logger.recordOutput("IntakePivot/AbsolutePosition", this.getAngle());
   }
 
   public void setAngle(Angle angle) {

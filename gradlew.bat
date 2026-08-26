@@ -41,6 +41,11 @@ set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 @rem Find java.exe
 if defined JAVA_HOME goto findJavaFromJavaHome
 
+@rem WPILib ships the supported JDK here on Windows. Use it when Java is not
+@rem configured globally so this wrapper also works from a normal terminal.
+if exist "%PUBLIC%\wpilib\2026\jdk\bin\java.exe" set JAVA_HOME=%PUBLIC%\wpilib\2026\jdk
+if defined JAVA_HOME goto findJavaFromJavaHome
+
 set JAVA_EXE=java.exe
 %JAVA_EXE% -version >NUL 2>&1
 if %ERRORLEVEL% equ 0 goto execute
@@ -69,6 +74,9 @@ goto fail
 
 :execute
 @rem Setup the command line
+
+@rem Keep the Gradle cache writable when the host has no usable user-home.
+if not defined GRADLE_USER_HOME set GRADLE_USER_HOME=%APP_HOME%\.gradle
 
 set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 
