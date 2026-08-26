@@ -83,9 +83,6 @@ public class Flywheel extends SubsystemBase {
     m_hoodRollerStallAlert.set(hoodHighCurrent && hoodNotMoving);
     m_backRollerStallAlert.set(backHighCurrent && backNotMoving);
 
-    Logger.recordOutput("Flywheel/HoodRollerVelocity", hoodVelocity);
-    Logger.recordOutput("Flywheel/BackRollerVelocity", backVelocity);
-    Logger.recordOutput("Flywheel/Setpoint", m_setpoint);
     Logger.recordOutput("Flywheel/IsNearSetpoint", m_isNearSetpointTrigger.getAsBoolean());
   }
 
@@ -109,7 +106,6 @@ public class Flywheel extends SubsystemBase {
         && getBackRollerVelocity().isNear(m_setpoint, tolerance);
   }
   
-  @AutoLogOutput (key = "Flywheel/NearSetpoint")
   public Trigger isNearSetpointTrigger() {
     return m_isNearSetpointTrigger;
   }

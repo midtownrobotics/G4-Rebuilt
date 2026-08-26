@@ -10,6 +10,7 @@ import static edu.wpi.first.units.Units.Volts;
 
 import java.util.function.Supplier;
 
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
@@ -127,17 +128,17 @@ public class Hood extends SubsystemBase {
     m_encoderConnectionAlert.set(!encoderAbsolutePosition.getStatus().isOK());
     m_stallAlert.set(m_motor.getStatorCurrent().getValue().gt(Amps.of(30)));
 
-    Logger.recordOutput("Hood/Position", getAngle());
     Logger.recordOutput("Hood/AbsolutePosition", encoderAbsolutePosition.getValue());
-    Logger.recordOutput("Hood/Setpoint", m_setpoint);
     Logger.recordOutput("Hood/CurrentSpike", isCurrentSpiking());
     Logger.recordOutput("Hood/IsNearSetpoint", m_isNearSetpointTrigger.getAsBoolean());
   }
 
+  @AutoLogOutput(key = "Hood/Position")
   public Angle getAngle() {
     return m_motor.getPosition().getValue();
   }
 
+  @AutoLogOutput(key = "Hood/Setpoint")
   public Angle getSetpointAngle() {
     return m_setpoint;
   }
