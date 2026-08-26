@@ -5,6 +5,7 @@ import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -47,6 +48,7 @@ public class Flywheel extends SubsystemBase {
       "Shooter back roller motor is stalling", AlertType.kWarning);
 
   private final Trigger m_isNearSetpointTrigger;
+
   private AngularVelocity m_setpoint = RPM.zero();
 
   public Flywheel(int hoodRollerMotorId, int backRollerMotorId) {
@@ -87,14 +89,17 @@ public class Flywheel extends SubsystemBase {
     Logger.recordOutput("Flywheel/IsNearSetpoint", m_isNearSetpointTrigger.getAsBoolean());
   }
 
+  @AutoLogOutput (key = "Flywheel/HoodRollerVelocity")
   public AngularVelocity getHoodRollerVelocity() {
     return m_hoodRollerMotor.getVelocity().getValue();
   }
 
+  @AutoLogOutput (key = "Flywheel/BackRollerVelocity")
   public AngularVelocity getBackRollerVelocity() {
     return m_backRollerMotor.getVelocity().getValue();
   }
 
+  @AutoLogOutput (key = "Flywheel/Setpoint")
   public AngularVelocity getSetpoint() {
     return m_setpoint;
   }
@@ -103,7 +108,8 @@ public class Flywheel extends SubsystemBase {
     return getHoodRollerVelocity().isNear(m_setpoint, tolerance)
         && getBackRollerVelocity().isNear(m_setpoint, tolerance);
   }
-
+  
+  @AutoLogOutput (key = "Flywheel/NearSetpoint")
   public Trigger isNearSetpointTrigger() {
     return m_isNearSetpointTrigger;
   }
