@@ -303,6 +303,7 @@ public class Drivetrain extends SubsystemBase {
   }
 
   /** Returns the module positions (turn angles and drive positions) for all of the modules. */
+  @AutoLogOutput(key = "SwervePositions/Measured")
   public SwerveModulePosition[] getModulePositions() {
     SwerveModulePosition[] positions = new SwerveModulePosition[4];
     for (int i = 0; i < 4; i++) {
@@ -342,6 +343,7 @@ public class Drivetrain extends SubsystemBase {
   }
 
   /** Returns the current odometry rotation. */
+  @AutoLogOutput(key = "Odometry/Rotation")
   public Rotation2d getRotation() {
     return getPose().getRotation();
   }

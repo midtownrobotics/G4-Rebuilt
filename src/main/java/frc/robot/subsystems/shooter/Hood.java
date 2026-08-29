@@ -31,6 +31,8 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
@@ -128,7 +130,6 @@ public class Hood extends SubsystemBase {
     m_encoderConnectionAlert.set(!encoderAbsolutePosition.getStatus().isOK());
     m_stallAlert.set(m_motor.getStatorCurrent().getValue().gt(Amps.of(30)));
 
-    Logger.recordOutput("Hood/AbsolutePosition", encoderAbsolutePosition.getValue());
     Logger.recordOutput("Hood/CurrentSpike", isCurrentSpiking());
     Logger.recordOutput("Hood/IsNearSetpoint", m_isNearSetpointTrigger.getAsBoolean());
   }
@@ -136,6 +137,31 @@ public class Hood extends SubsystemBase {
   @AutoLogOutput(key = "Hood/Position")
   public Angle getAngle() {
     return m_motor.getPosition().getValue();
+  }
+
+  @AutoLogOutput(key = "Hood/AbsolutePosition")
+  public Angle getAbsoluteAngle() {
+    return m_encoder.getAbsolutePosition().getValue();
+  }
+
+  @AutoLogOutput(key = "Hood/Velocity")
+  public AngularVelocity getVelocity() {
+    return m_motor.getVelocity().getValue();
+  }
+
+  @AutoLogOutput(key = "Hood/AppliedVoltage")
+  public Voltage getAppliedVoltage() {
+    return m_motor.getMotorVoltage().getValue();
+  }
+
+  @AutoLogOutput(key = "Hood/StatorCurrent")
+  public Current getStatorCurrent() {
+    return m_motor.getStatorCurrent().getValue();
+  }
+
+  @AutoLogOutput(key = "Hood/SupplyCurrent")
+  public Current getSupplyCurrent() {
+    return m_motor.getSupplyCurrent().getValue();
   }
 
   @AutoLogOutput(key = "Hood/Setpoint")

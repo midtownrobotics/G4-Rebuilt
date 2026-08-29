@@ -16,6 +16,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
@@ -94,6 +95,36 @@ public class Flywheel extends SubsystemBase {
   @AutoLogOutput (key = "Flywheel/BackRollerVelocity")
   public AngularVelocity getBackRollerVelocity() {
     return m_backRollerMotor.getVelocity().getValue();
+  }
+
+  @AutoLogOutput(key = "Flywheel/HoodRollerAppliedVoltage")
+  public Voltage getHoodRollerAppliedVoltage() {
+    return m_hoodRollerMotor.getMotorVoltage().getValue();
+  }
+
+  @AutoLogOutput(key = "Flywheel/BackRollerAppliedVoltage")
+  public Voltage getBackRollerAppliedVoltage() {
+    return m_backRollerMotor.getMotorVoltage().getValue();
+  }
+
+  @AutoLogOutput(key = "Flywheel/HoodRollerStatorCurrent")
+  public Current getHoodRollerStatorCurrent() {
+    return m_hoodRollerMotor.getStatorCurrent().getValue();
+  }
+
+  @AutoLogOutput(key = "Flywheel/BackRollerStatorCurrent")
+  public Current getBackRollerStatorCurrent() {
+    return m_backRollerMotor.getStatorCurrent().getValue();
+  }
+
+  @AutoLogOutput(key = "Flywheel/HoodRollerSupplyCurrent")
+  public Current getHoodRollerSupplyCurrent() {
+    return m_hoodRollerMotor.getSupplyCurrent().getValue();
+  }
+
+  @AutoLogOutput(key = "Flywheel/BackRollerSupplyCurrent")
+  public Current getBackRollerSupplyCurrent() {
+    return m_backRollerMotor.getSupplyCurrent().getValue();
   }
 
   @AutoLogOutput (key = "Flywheel/Setpoint")

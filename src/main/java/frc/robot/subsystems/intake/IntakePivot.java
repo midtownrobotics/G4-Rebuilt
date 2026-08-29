@@ -4,8 +4,6 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Rotations;
 
-import java.time.chrono.ThaiBuddhistChronology;
-
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
@@ -22,12 +20,14 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 
 public class IntakePivot extends SubsystemBase{
   private final TalonFX m_motor;
   private final CANcoder m_encoder;
   private final MotionMagicVoltage m_positionRequest = new MotionMagicVoltage(0);
+  private Angle m_setpoint = State.START.angle();
 
   @AutoLogOutput (key = "IntakePivot/State")
   public State state = State.START;
@@ -71,6 +71,7 @@ public class IntakePivot extends SubsystemBase{
   }
 
   public void setAngle(Angle angle) {
+    m_setpoint = angle;
     m_motor.setControl(m_positionRequest.withPosition(angle.in(Rotations)));
   }
 
@@ -91,6 +92,26 @@ public class IntakePivot extends SubsystemBase{
   @AutoLogOutput (key = "IntakePivot/SupplyVoltage")
   public Voltage getVoltage() {
     return m_encoder.getSupplyVoltage().getValue();
+  }
+
+  @AutoLogOutput(key = "IntakePivot/AppliedVoltage")
+  public Voltage getAppliedVoltage() {
+    return m_motor.getMotorVoltage().getValue();
+  }
+
+  @AutoLogOutput(key = "IntakePivot/StatorCurrent")
+  public Current getStatorCurrent() {
+    return m_motor.getStatorCurrent().getValue();
+  }
+
+  @AutoLogOutput(key = "IntakePivot/SupplyCurrent")
+  public Current getSupplyCurrent() {
+    return m_motor.getSupplyCurrent().getValue();
+  }
+
+  @AutoLogOutput(key = "IntakePivot/Setpoint")
+  public Angle getSetpoint() {
+    return m_setpoint;
   }
 
   public void start() {
