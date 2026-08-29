@@ -35,12 +35,12 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import frc.robot.util.TunerConstants;
+import frc.robot.generated.TunerConstants;
 import frc.robot.util.PoseEstimator;
 import frc.robot.util.PoseEstimator.OdometryObservation;
 import frc.robot.util.PoseEstimator.VisionObservation;
 
-public class Drivetrain extends SubsystemBase {
+public class Drive extends SubsystemBase {
   // TunerConstants doesn't include these constants, so they are declared locally
   static final double ODOMETRY_FREQUENCY = TunerConstants.kCANBus.isNetworkFD() ? 250.0 : 100.0;
   public static final double DRIVE_BASE_RADIUS = Math.max(
@@ -77,7 +77,7 @@ public class Drivetrain extends SubsystemBase {
   private final PIDController m_pathYController = new PIDController(7, 0, 0);
   private final PIDController m_pathThetaController = new PIDController(6, 0, 0);
 
-  public Drivetrain(
+  public Drive(
       GyroIO gyroIO,
       ModuleIO flModuleIO,
       ModuleIO frModuleIO,
@@ -91,6 +91,9 @@ public class Drivetrain extends SubsystemBase {
 
     // Usage reporting for swerve template
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_AdvantageKit);
+
+    // Start odometry thread
+    PhoenixOdometryThread.getInstance().start();
 
     // Configure SysId
     sysId = new SysIdRoutine(
@@ -303,7 +306,6 @@ public class Drivetrain extends SubsystemBase {
   }
 
   /** Returns the module positions (turn angles and drive positions) for all of the modules. */
-  @AutoLogOutput(key = "SwervePositions/Measured")
   public SwerveModulePosition[] getModulePositions() {
     SwerveModulePosition[] positions = new SwerveModulePosition[4];
     for (int i = 0; i < 4; i++) {
@@ -343,7 +345,6 @@ public class Drivetrain extends SubsystemBase {
   }
 
   /** Returns the current odometry rotation. */
-  @AutoLogOutput(key = "Odometry/Rotation")
   public Rotation2d getRotation() {
     return getPose().getRotation();
   }

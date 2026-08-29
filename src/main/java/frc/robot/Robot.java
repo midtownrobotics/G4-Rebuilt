@@ -12,21 +12,23 @@ import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.subsystems.drive.Drivetrain;
+import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.drive.GyroIOPigeon2;
 import frc.robot.subsystems.drive.GyroIOSim;
 import frc.robot.subsystems.drive.ModuleIOSim;
+import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.feeder.Feeder;
 import frc.robot.subsystems.intake.IntakePivot;
 import frc.robot.subsystems.intake.IntakeRoller;
 import frc.robot.subsystems.shooter.Flywheel;
 import frc.robot.subsystems.shooter.Hood;
-import frc.robot.util.TunerConstants;
 
 public class Robot extends LoggedRobot {
   private Command m_autonomousCommand;
 
   private final CommandXboxController m_driverController = new CommandXboxController(0);
-  private final Drivetrain m_drivetrain;
+  private final Drive m_drivetrain;
   private final IntakePivot m_intakePivot;
   private final IntakeRoller m_intakeRoller;
   private final Hood m_hood;
@@ -40,12 +42,21 @@ public class Robot extends LoggedRobot {
 
     DriverStation.silenceJoystickConnectionWarning(isSimulation());
 
-    m_drivetrain = new Drivetrain(
-        new GyroIOSim(),
-        new ModuleIOSim(TunerConstants.FrontLeft),
-        new ModuleIOSim(TunerConstants.FrontRight),
-        new ModuleIOSim(TunerConstants.BackLeft),
-        new ModuleIOSim(TunerConstants.BackRight));
+    if (RobotBase.isReal()) {
+      m_drivetrain = new Drive(
+          new GyroIOPigeon2(),
+          new ModuleIOTalonFX(TunerConstants.FrontLeft),
+          new ModuleIOTalonFX(TunerConstants.FrontRight),
+          new ModuleIOTalonFX(TunerConstants.BackLeft),
+          new ModuleIOTalonFX(TunerConstants.BackRight));
+    } else {
+      m_drivetrain = new Drive(
+          new GyroIOSim(),
+          new ModuleIOSim(TunerConstants.FrontLeft),
+          new ModuleIOSim(TunerConstants.FrontRight),
+          new ModuleIOSim(TunerConstants.BackLeft),
+          new ModuleIOSim(TunerConstants.BackRight));
+    }
 
     // G3-2026 event-cmp mechanism CAN IDs.
     m_intakePivot = new IntakePivot(23, 25);
