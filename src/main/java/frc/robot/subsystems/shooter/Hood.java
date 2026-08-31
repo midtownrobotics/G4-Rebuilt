@@ -2,6 +2,7 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.*;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.Alert;
@@ -14,6 +15,7 @@ import org.littletonrobotics.junction.Logger;
 
 public class Hood extends SubsystemBase {
   public static final Angle kMinimumAngle = Degrees.of(16.25), kMaximumAngle = Degrees.of(35);
+  public static final Angle kAdjustmentStep = Degrees.of(2.0);
   private final HoodIO io;
   private final HoodIOInputsAutoLogged inputs = new HoodIOInputsAutoLogged();
   private final LinearFilter filter = LinearFilter.movingAverage(5);
@@ -85,6 +87,18 @@ public class Hood extends SubsystemBase {
 
   public Command setAngleCommand(Supplier<Angle> a) {
     return run(() -> io.setPosition(a.get()));
+  }
+
+  /** Moves the hood once by the requested amount, clamped to the physical angle limits. */
+  public Command adjustAngleCommand(Angle adjustment) {
+    return runOnce(
+        () -> {
+          double adjustedDegrees = getAngle().plus(adjustment).in(Degrees);
+          double clampedDegrees =
+              MathUtil.clamp(
+                  adjustedDegrees, kMinimumAngle.in(Degrees), kMaximumAngle.in(Degrees));
+          setAngle(Degrees.of(clampedDegrees));
+        });
   }
 
   public Command setMinimumAngleCommand() {

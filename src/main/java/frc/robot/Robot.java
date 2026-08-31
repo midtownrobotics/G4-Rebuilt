@@ -4,7 +4,6 @@ import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.SignalLogger;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -16,7 +15,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.controls.Controls;
+import frc.robot.controls.XboxControls;
 import frc.lib.LoggedCommandScheduler;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
@@ -51,7 +51,7 @@ public class Robot extends LoggedRobot {
 
   private Command m_autonomousCommand;
 
-  private final CommandXboxController m_driverController = new CommandXboxController(0);
+  private final Controls m_controls = new XboxControls(0);
   private final Drive m_drivetrain;
   private final IntakePivot m_intakePivot;
   private final IntakeRoller m_intakeRoller;
@@ -120,15 +120,9 @@ public class Robot extends LoggedRobot {
     m_drivetrain.setDefaultCommand(
         m_drivetrain.run(
             () -> {
-              double x = -MathUtil.applyDeadband(m_driverController.getLeftY(), 0.1);
-              double y = -MathUtil.applyDeadband(m_driverController.getLeftX(), 0.1);
-              boolean usingKeyboardJoystick =
-                  RobotBase.isSimulation() && DriverStation.getStickAxisCount(0) <= 3;
-              double rotationAxis =
-                  usingKeyboardJoystick
-                      ? m_driverController.getHID().getRawAxis(2)
-                      : m_driverController.getRightX();
-              double omega = -MathUtil.applyDeadband(rotationAxis, 0.1);
+              double x = m_controls.getDriveForward();
+              double y = m_controls.getDriveLeft();
+              double omega = m_controls.getDriveRotation();
               ChassisSpeeds fieldRelativeSpeeds =
                   new ChassisSpeeds(
                       x * m_drivetrain.getMaxLinearSpeedMetersPerSec(),
@@ -139,19 +133,19 @@ public class Robot extends LoggedRobot {
                       fieldRelativeSpeeds, m_drivetrain.getRotation()));
             }));
 
-    var intakeTrigger = m_driverController.leftTrigger(0.2);
-    intakeTrigger
-        .onTrue(m_intakePivot.setStateCommand(IntakePivot.State.INTAKING))
-        .whileTrue(m_intakeRoller.setVoltageCommand(Volts.of(12.0)))
-        .onFalse(
+    m_controls
+        .intake()
+        .whileTrue(
             Commands.parallel(
-                m_intakePivot.setStateCommand(IntakePivot.State.NOT_INTAKING),
-                m_intakeRoller.stopCommand()));
+                    m_intakePivot.setStateCommand(IntakePivot.State.INTAKING),
+                    m_intakeRoller.setVoltageCommand(Volts.of(12.0)))
+                .finallyDo(
+                    () -> {
+                      m_intakePivot.setState(IntakePivot.State.NOT_INTAKING);
+                      m_intakeRoller.stop();
+                    }));
 
-    m_driverController
-        .rightTrigger(0.2)
-        .onTrue(m_hood.setMaximumAngleCommand())
-        .onFalse(m_hood.setMinimumAngleCommand());
+    configureBindings();
 
     SmartDashboard.putData(
         "StartSignalLogger", Commands.runOnce(SignalLogger::start).ignoringDisable(true));
@@ -161,12 +155,60 @@ public class Robot extends LoggedRobot {
     LoggedCommandScheduler.init(CommandScheduler.getInstance());
   }
 
+  private void configureBindings() {
+    m_controls
+        .idle()
+        .onTrue(
+            Commands.parallel(
+                m_intakePivot.setStateCommand(IntakePivot.State.NOT_INTAKING),
+                m_intakeRoller.stopCommand(),
+                m_hood.setMinimumAngleCommand(),
+                m_flywheel.stopCommand(),
+                m_feeder.stopCommand()));
+
+    m_controls
+        .shoot()
+        .whileTrue(
+            Commands.parallel(
+                    m_flywheel.setVoltageCommand(Volts.of(12.0)),
+                    m_feeder.runForwardCommand())
+                .finallyDo(
+                    () -> {
+                      m_flywheel.stop();
+                      m_feeder.stop();
+                    }));
+
+    m_controls
+        .unjam()
+        .whileTrue(
+            Commands.parallel(
+                m_intakeRoller.setVoltageCommand(Volts.of(-12)), m_feeder.runReverseCommand()))
+        .onFalse(Commands.parallel(m_intakeRoller.stopCommand(), m_feeder.stopCommand()));
+
+    m_controls.feedFuel().whileTrue(m_feeder.runForwardCommand());
+
+    m_controls
+        .increaseHoodAngle()
+        .onTrue(m_hood.adjustAngleCommand(Hood.kAdjustmentStep));
+    m_controls
+        .decreaseHoodAngle()
+        .onTrue(m_hood.adjustAngleCommand(Hood.kAdjustmentStep.unaryMinus()));
+
+    // G4 does not yet expose the G3 homing routines, so the matching chords return to the
+    // known mechanism reference positions.
+    m_controls
+        .zeroIntake()
+        .onTrue(m_intakePivot.setStateCommand(IntakePivot.State.NOT_INTAKING));
+    m_controls.zeroHood().onTrue(m_hood.setMinimumAngleCommand());
+    m_controls
+        .disableShooting()
+        .whileTrue(Commands.parallel(m_flywheel.stopCommand(), m_feeder.stopCommand()));
+  }
+
   @Override
   public void robotPeriodic() {
     CommandScheduler.getInstance().run();
 
-    Logger.recordOutput("Controls/LeftTrigger", m_driverController.getLeftTriggerAxis());
-    Logger.recordOutput("Controls/RightTrigger", m_driverController.getRightTriggerAxis());
     Logger.recordOutput("CanBusUsage/Drive", TunerConstants.kCANBus.getStatus().BusUtilization);
     Logger.recordOutput("CanBusUsage/Mechs", kMechanismCANBus.getStatus().BusUtilization);
     Logger.recordOutput("matchTime", DriverStation.getMatchTime());
