@@ -68,9 +68,9 @@ public class TunerConstants {
   // This affects the PID/FF gains for the drive motors
   private static final ClosedLoopOutputType kDriveClosedLoopOutput = ClosedLoopOutputType.Voltage;
 
-  // The type of motor used for the drive motor
+  // Kraken X60 brushless (BLDC) drive motor with an integrated Talon FX controller
   private static final DriveMotorArrangement kDriveMotorType = DriveMotorArrangement.TalonFX_Integrated;
-  // The type of motor used for the drive motor
+  // Kraken X60 brushless (BLDC) steer motor with an integrated Talon FX controller
   private static final SteerMotorArrangement kSteerMotorType = SteerMotorArrangement.TalonFX_Integrated;
 
   // The remote sensor feedback type to use for the steer motors;
@@ -110,13 +110,14 @@ public class TunerConstants {
 
   // Theoretical free speed (m/s) at 12 V applied output;
   // This needs to be tuned to your individual robot
-  public static final LinearVelocity kSpeedAt12Volts = MetersPerSecond.of(5.23);
+  public static final LinearVelocity kSpeedAt12Volts = MetersPerSecond.of(4.30);
 
-  // Every 1 rotation of the azimuth results in kCoupleRatio drive motor turns;
-  // This may need to be tuned to your individual robot
-  private static final double kCoupleRatio = 3.125;
+  // L1 swerve drive gearset. Every 1 rotation of the azimuth results in
+  // kCoupleRatio drive motor turns.
+  private static final double kCoupleRatio = 3.8181818181818183;
 
-  private static final double kDriveGearRatio = 5.902777777777778;
+  // L1 motor-to-wheel reduction
+  private static final double kDriveGearRatio = 7.363636363636365;
   private static final double kSteerGearRatio = 21.428571428571427;
   private static final Distance kWheelRadius = Inches.of(2.044);
 
@@ -167,7 +168,7 @@ public class TunerConstants {
   private static final boolean kFrontLeftSteerMotorInverted = true;
   private static final boolean kFrontLeftEncoderInverted = false;
 
-  public static final Distance kFrontLeftXPos = Inches.of(9.125);
+  public static final Distance kFrontLeftXPos = Inches.of(10.875);
   public static final Distance kFrontLeftYPos = Inches.of(12.625);
 
   // Front Right
@@ -178,7 +179,7 @@ public class TunerConstants {
   private static final boolean kFrontRightSteerMotorInverted = true;
   private static final boolean kFrontRightEncoderInverted = false;
 
-  private static final Distance kFrontRightXPos = Inches.of(9.125);
+  private static final Distance kFrontRightXPos = Inches.of(10.875);
   private static final Distance kFrontRightYPos = Inches.of(-12.625);
 
   // Back Left
@@ -189,7 +190,7 @@ public class TunerConstants {
   private static final boolean kBackLeftSteerMotorInverted = true;
   private static final boolean kBackLeftEncoderInverted = false;
 
-  private static final Distance kBackLeftXPos = Inches.of(-9.125);
+  private static final Distance kBackLeftXPos = Inches.of(-10.875);
   private static final Distance kBackLeftYPos = Inches.of(12.625);
 
   // Back Right
@@ -200,7 +201,7 @@ public class TunerConstants {
   private static final boolean kBackRightSteerMotorInverted = true;
   private static final boolean kBackRightEncoderInverted = false;
 
-  private static final Distance kBackRightXPos = Inches.of(-9.125);
+  private static final Distance kBackRightXPos = Inches.of(-10.875);
   private static final Distance kBackRightYPos = Inches.of(-12.625);
 
   public static final SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration> FrontLeft = ConstantCreator
