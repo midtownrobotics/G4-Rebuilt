@@ -1,12 +1,11 @@
 package frc.robot;
 
-import static edu.wpi.first.units.Units.Volts;
-
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.SignalLogger;
+import choreo.auto.AutoChooser;
+import choreo.auto.AutoFactory;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
@@ -15,9 +14,11 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import frc.robot.controls.Controls;
 import frc.robot.controls.XboxControls;
 import frc.lib.LoggedCommandScheduler;
+import frc.robot.commands.RobotCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
@@ -58,6 +59,11 @@ public class Robot extends LoggedRobot {
   private final Hood m_hood;
   private final Flywheel m_flywheel;
   private final Feeder m_feeder;
+  private final RobotCommands m_robotCommands;
+
+  private final AutoFactory m_autoFactory;
+  private final AutoRoutines m_autoRoutines;
+  private final AutoChooser m_autoChooser;
 
   public Robot() {
     Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
@@ -117,35 +123,31 @@ public class Robot extends LoggedRobot {
 
     // G3-2026 event-cmp mechanism CAN IDs.
 
-    m_drivetrain.setDefaultCommand(
-        m_drivetrain.run(
-            () -> {
-              double x = m_controls.getDriveForward();
-              double y = m_controls.getDriveLeft();
-              double omega = m_controls.getDriveRotation();
-              ChassisSpeeds fieldRelativeSpeeds =
-                  new ChassisSpeeds(
-                      x * m_drivetrain.getMaxLinearSpeedMetersPerSec(),
-                      y * m_drivetrain.getMaxLinearSpeedMetersPerSec(),
-                      omega * m_drivetrain.getMaxAngularSpeedRadPerSec());
-              m_drivetrain.runVelocity(
-                  ChassisSpeeds.fromFieldRelativeSpeeds(
-                      fieldRelativeSpeeds, m_drivetrain.getRotation()));
-            }));
+    m_robotCommands =
+        new RobotCommands(
+            m_controls,
+            m_drivetrain,
+            m_intakePivot,
+            m_intakeRoller,
+            m_hood,
+            m_flywheel,
+            m_feeder);
 
-    m_controls
-        .intake()
-        .whileTrue(
-            Commands.parallel(
-                    m_intakePivot.setStateCommand(IntakePivot.State.INTAKING),
-                    m_intakeRoller.setVoltageCommand(Volts.of(12.0)))
-                .finallyDo(
-                    () -> {
-                      m_intakePivot.setState(IntakePivot.State.NOT_INTAKING);
-                      m_intakeRoller.stop();
-                    }));
+    m_drivetrain.setDefaultCommand(m_robotCommands.driveCommand());
 
     configureBindings();
+
+    m_autoFactory =
+        new AutoFactory(
+            m_drivetrain::getPose,
+            m_drivetrain::resetPose,
+            m_drivetrain::followPath,
+            true,
+            m_drivetrain);
+    m_autoRoutines = new AutoRoutines(m_autoFactory, m_robotCommands, m_drivetrain);
+    m_autoChooser = new AutoChooser("Do Nothing");
+
+    generateAutoChooser();
 
     SmartDashboard.putData(
         "StartSignalLogger", Commands.runOnce(SignalLogger::start).ignoringDisable(true));
@@ -155,54 +157,26 @@ public class Robot extends LoggedRobot {
     LoggedCommandScheduler.init(CommandScheduler.getInstance());
   }
 
+  private void generateAutoChooser() {
+    // Add routines here once G4 autonomous paths are ready.
+    SmartDashboard.putData("Auto Chooser", m_autoChooser);
+    RobotModeTriggers.autonomous().whileTrue(m_autoChooser.selectedCommandScheduler());
+  }
+
   private void configureBindings() {
-    m_controls
-        .idle()
-        .onTrue(
-            Commands.parallel(
-                m_intakePivot.setStateCommand(IntakePivot.State.NOT_INTAKING),
-                m_intakeRoller.stopCommand(),
-                m_hood.setMinimumAngleCommand(),
-                m_flywheel.stopCommand(),
-                m_feeder.stopCommand()));
-
-    m_controls
-        .shoot()
-        .whileTrue(
-            Commands.parallel(
-                    m_flywheel.setVoltageCommand(Volts.of(12.0)),
-                    m_feeder.runForwardCommand())
-                .finallyDo(
-                    () -> {
-                      m_flywheel.stop();
-                      m_feeder.stop();
-                    }));
-
-    m_controls
-        .unjam()
-        .whileTrue(
-            Commands.parallel(
-                m_intakeRoller.setVoltageCommand(Volts.of(-12)), m_feeder.runReverseCommand()))
-        .onFalse(Commands.parallel(m_intakeRoller.stopCommand(), m_feeder.stopCommand()));
-
-    m_controls.feedFuel().whileTrue(m_feeder.runForwardCommand());
-
-    m_controls
-        .increaseHoodAngle()
-        .onTrue(m_hood.adjustAngleCommand(Hood.kAdjustmentStep));
-    m_controls
-        .decreaseHoodAngle()
-        .onTrue(m_hood.adjustAngleCommand(Hood.kAdjustmentStep.unaryMinus()));
+    m_controls.idle().onTrue(m_robotCommands.idle());
+    m_controls.intake().whileTrue(m_robotCommands.runIntake());
+    m_controls.shoot().whileTrue(m_robotCommands.shoot());
+    m_controls.unjam().whileTrue(m_robotCommands.unjam());
+    m_controls.feedFuel().whileTrue(m_robotCommands.feedFuel());
+    m_controls.increaseHoodAngle().onTrue(m_robotCommands.increaseHoodAngle());
+    m_controls.decreaseHoodAngle().onTrue(m_robotCommands.decreaseHoodAngle());
 
     // G4 does not yet expose the G3 homing routines, so the matching chords return to the
     // known mechanism reference positions.
-    m_controls
-        .zeroIntake()
-        .onTrue(m_intakePivot.setStateCommand(IntakePivot.State.NOT_INTAKING));
-    m_controls.zeroHood().onTrue(m_hood.setMinimumAngleCommand());
-    m_controls
-        .disableShooting()
-        .whileTrue(Commands.parallel(m_flywheel.stopCommand(), m_feeder.stopCommand()));
+    m_controls.zeroIntake().onTrue(m_robotCommands.zeroIntake());
+    m_controls.zeroHood().onTrue(m_robotCommands.zeroHood());
+    m_controls.disableShooting().whileTrue(m_robotCommands.disableShooting());
   }
 
   @Override
