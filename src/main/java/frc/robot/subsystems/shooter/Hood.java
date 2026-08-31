@@ -41,12 +41,20 @@ import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.lib.LoggedTunableNumber;
 
 public class Hood extends SubsystemBase {
   private static final double kRotorToHoodRatio = 62.0 / 14.0;
 
   private static final Angle kMinimumAngle = Degrees.of(16.25);
   private static final Angle kMaximumAngle = Degrees.of(35.0);
+
+  private final LoggedTunableNumber m_kP = new LoggedTunableNumber("Hood/kP", 800.0);
+  private final LoggedTunableNumber m_kI = new LoggedTunableNumber("Hood/kI", 0.0);
+  private final LoggedTunableNumber m_kD = new LoggedTunableNumber("Hood/kD", 18.0);
+  private final LoggedTunableNumber m_kS = new LoggedTunableNumber("Hood/kS", 0.395);
+  private final LoggedTunableNumber m_kV = new LoggedTunableNumber("Hood/kV", 30.0);
+  private final LoggedTunableNumber m_kG = new LoggedTunableNumber("Hood/kG", 0.015);
 
   private final TalonFX m_motor;
   private final CANcoder m_encoder;
@@ -129,6 +137,11 @@ public class Hood extends SubsystemBase {
 
   @Override
   public void periodic() {
+    LoggedTunableNumber.ifChanged(
+        hashCode(),
+        values -> setPID(values[0], values[1], values[2], values[3], values[4], values[5]),
+        m_kP, m_kI, m_kD, m_kS, m_kV, m_kG);
+
     if (RobotBase.isSimulation()) {
       double error = m_setpoint.in(Radians) - m_simAngleRadians;
       double maximumStep = kSimMaxVelocityRadiansPerSecond * 0.02;
@@ -257,13 +270,15 @@ public class Hood extends SubsystemBase {
     return runOnce(() -> setLowerSoftLimitEnabled(enabled));
   }
 
-  public void setPID(double kP, double kI, double kD, double kS, double kG) {
+  public void setPID(double kP, double kI, double kD, double kS, double kV, double kG) {
     Slot0Configs gains = new Slot0Configs()
         .withKP(kP)
         .withKI(kI)
         .withKD(kD)
         .withKS(kS)
+        .withKV(kV)
         .withKG(kG)
+        .withGravityArmPositionOffset(Degrees.of(11))
         .withGravityType(GravityTypeValue.Arm_Cosine);
     m_motor.getConfigurator().apply(gains);
   }

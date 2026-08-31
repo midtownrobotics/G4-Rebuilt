@@ -2,9 +2,16 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.Volts;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
+
+import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.SignalLogger;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -14,10 +21,12 @@ import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.lib.LoggedCommandScheduler;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
@@ -31,6 +40,8 @@ import frc.robot.subsystems.shooter.Flywheel;
 import frc.robot.subsystems.shooter.Hood;
 
 public class Robot extends LoggedRobot {
+  private static final CANBus kMechanismCANBus = new CANBus("rio");
+
   private Command m_autonomousCommand;
 
   private final CommandXboxController m_driverController = new CommandXboxController(0);
@@ -42,7 +53,28 @@ public class Robot extends LoggedRobot {
   private final Feeder m_feeder;
 
   public Robot() {
-    Logger.recordMetadata("ProjectName", "G4-Rebuilt");
+    Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
+    Logger.recordMetadata("BuildDate", BuildConstants.BUILD_DATE);
+    Logger.recordMetadata("GitSHA", BuildConstants.GIT_SHA);
+    Logger.recordMetadata("GitDate", BuildConstants.GIT_DATE);
+    Logger.recordMetadata("GitBranch", BuildConstants.GIT_BRANCH);
+    Logger.recordMetadata(
+        "GitDirty",
+        switch (BuildConstants.DIRTY) {
+          case 0 -> "All changes committed";
+          case 1 -> "Uncommitted changes";
+          default -> "Unknown";
+        });
+    try {
+      Logger.recordMetadata(
+          "Hostname", InetAddress.getLocalHost().getHostName().replaceAll("\\.local$", ""));
+    } catch (UnknownHostException exception) {
+      Logger.recordMetadata("Hostname", "Unknown");
+    }
+
+    if (isReal()) {
+      Logger.addDataReceiver(new WPILOGWriter("/home/lvuser/logs"));
+    }
     Logger.addDataReceiver(new NT4Publisher());
     Logger.start();
 
@@ -99,6 +131,13 @@ public class Robot extends LoggedRobot {
     m_driverController.rightTrigger(0.2)
         .onTrue(m_hood.setMaximumAngleCommand())
         .onFalse(m_hood.setMinimumAngleCommand());
+
+    SmartDashboard.putData(
+        "StartSignalLogger", Commands.runOnce(SignalLogger::start).ignoringDisable(true));
+    SmartDashboard.putData(
+        "StopSignalLogger", Commands.runOnce(SignalLogger::stop).ignoringDisable(true));
+
+    LoggedCommandScheduler.init(CommandScheduler.getInstance());
   }
 
   @Override
@@ -107,6 +146,9 @@ public class Robot extends LoggedRobot {
 
     Logger.recordOutput("Controls/LeftTrigger", m_driverController.getLeftTriggerAxis());
     Logger.recordOutput("Controls/RightTrigger", m_driverController.getRightTriggerAxis());
+    Logger.recordOutput("CanBusUsage/Drive", TunerConstants.kCANBus.getStatus().BusUtilization);
+    Logger.recordOutput("CanBusUsage/Mechs", kMechanismCANBus.getStatus().BusUtilization);
+    Logger.recordOutput("matchTime", DriverStation.getMatchTime());
     Logger.recordOutput("RobotViz/RobotPose", m_drivetrain.getPose());
 
     double intakeAngleRadians = m_intakePivot.getAngle().in(Units.Radians);
@@ -122,6 +164,8 @@ public class Robot extends LoggedRobot {
         new Pose3d(-0.2881376, 0.0, 0.4881626,
             new Rotation3d(0.0, -hoodAngleRadians, 0.0))
     });
+
+    LoggedCommandScheduler.periodic();
   }
 
   @Override

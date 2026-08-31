@@ -9,6 +9,7 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -24,6 +25,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import frc.lib.LoggedTunableNumber;
 
 public class IntakePivot extends SubsystemBase{
   private final TalonFX m_motor;
@@ -33,6 +35,12 @@ public class IntakePivot extends SubsystemBase{
   private double m_simAngleRadians = State.START.angle().in(Radians);
 
   private static final double kSimMaxVelocityRadiansPerSecond = Math.toRadians(180.0);
+
+  private final LoggedTunableNumber m_kP = new LoggedTunableNumber("IntakePivot/kP", 0.0);
+  private final LoggedTunableNumber m_kI = new LoggedTunableNumber("IntakePivot/kI", 0.0);
+  private final LoggedTunableNumber m_kD = new LoggedTunableNumber("IntakePivot/kD", 0.0);
+  private final LoggedTunableNumber m_kS = new LoggedTunableNumber("IntakePivot/kS", 0.0);
+  private final LoggedTunableNumber m_kG = new LoggedTunableNumber("IntakePivot/kG", 0.0);
 
   @AutoLogOutput (key = "IntakePivot/State")
   public State state = State.START;
@@ -78,6 +86,11 @@ public class IntakePivot extends SubsystemBase{
 
   @Override
   public void periodic() {
+    LoggedTunableNumber.ifChanged(
+        hashCode(),
+        values -> setPID(values[0], values[1], values[2], values[3], values[4]),
+        m_kP, m_kI, m_kD, m_kS, m_kG);
+
     if (RobotBase.isSimulation()) {
       double error = m_setpoint.in(Radians) - m_simAngleRadians;
       double maximumStep = kSimMaxVelocityRadiansPerSecond * 0.02;
@@ -143,5 +156,14 @@ public class IntakePivot extends SubsystemBase{
 
   public void start() {
     setState(State.START);
+  }
+
+  public void setPID(double kP, double kI, double kD, double kS, double kG) {
+    m_motor.getConfigurator().apply(new Slot0Configs()
+        .withKP(kP)
+        .withKI(kI)
+        .withKD(kD)
+        .withKS(kS)
+        .withKG(kG));
   }
 }

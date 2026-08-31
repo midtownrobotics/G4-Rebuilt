@@ -23,6 +23,7 @@ import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.lib.LoggedTunableNumber;
 
 public class Flywheel extends SubsystemBase {
   private static final double kHoodRollerRatio = 28.0 / 30.0;
@@ -30,6 +31,12 @@ public class Flywheel extends SubsystemBase {
 
   private static final double kStallCurrentAmps = 68.0;
   private static final double kStallVelocityRPS = 2.0;
+
+  private final LoggedTunableNumber m_kP = new LoggedTunableNumber("Flywheel/kP", 0.0);
+  private final LoggedTunableNumber m_kI = new LoggedTunableNumber("Flywheel/kI", 0.0);
+  private final LoggedTunableNumber m_kD = new LoggedTunableNumber("Flywheel/kD", 0.0);
+  private final LoggedTunableNumber m_kS = new LoggedTunableNumber("Flywheel/kS", 0.0);
+  private final LoggedTunableNumber m_kV = new LoggedTunableNumber("Flywheel/kV", 0.0);
 
   private final TalonFX m_hoodRollerMotor;
   private final TalonFX m_backRollerMotor;
@@ -71,6 +78,11 @@ public class Flywheel extends SubsystemBase {
 
   @Override
   public void periodic() {
+    LoggedTunableNumber.ifChanged(
+        hashCode(),
+        values -> setPID(values[0], values[1], values[2], values[3], values[4]),
+        m_kP, m_kI, m_kD, m_kS, m_kV);
+
     AngularVelocity hoodVelocity = getHoodRollerVelocity();
     AngularVelocity backVelocity = getBackRollerVelocity();
 

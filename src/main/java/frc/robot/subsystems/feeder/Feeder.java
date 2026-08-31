@@ -35,12 +35,17 @@ import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.lib.LoggedTunableNumber;
 
 public class Feeder extends SubsystemBase {
   private static final double kGearRatio = 2.0;
   private static final double kSimMomentOfInertia = 0.001;
   private static final Voltage kFeedVoltage = Volts.of(10.0);
   private static final Voltage kReverseVoltage = Volts.of(-10.0);
+
+  private final LoggedTunableNumber m_kP = new LoggedTunableNumber("Feeder/kP", 0.1);
+  private final LoggedTunableNumber m_kI = new LoggedTunableNumber("Feeder/kI", 0.0);
+  private final LoggedTunableNumber m_kD = new LoggedTunableNumber("Feeder/kD", 0.0);
 
   private final TalonFX m_leaderMotor;
   private final TalonFX m_followerMotor;
@@ -128,6 +133,9 @@ public class Feeder extends SubsystemBase {
 
   @Override
   public void periodic() {
+    LoggedTunableNumber.ifChanged(
+        hashCode(), values -> setPID(values[0], values[1], values[2]), m_kP, m_kI, m_kD);
+
     BaseStatusSignal.refreshAll(
         m_leaderVelocitySignal,
         m_followerVelocitySignal,
