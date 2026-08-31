@@ -2,6 +2,7 @@ package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Rotations;
 
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -17,6 +18,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj.RobotBase;
 
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -28,12 +30,15 @@ public class IntakePivot extends SubsystemBase{
   private final CANcoder m_encoder;
   private final MotionMagicVoltage m_positionRequest = new MotionMagicVoltage(0);
   private Angle m_setpoint = State.START.angle();
+  private double m_simAngleRadians = State.START.angle().in(Radians);
+
+  private static final double kSimMaxVelocityRadiansPerSecond = Math.toRadians(180.0);
 
   @AutoLogOutput (key = "IntakePivot/State")
   public State state = State.START;
 
   public enum State {
-    START(Degrees.of(115)),
+    START(Degrees.of(90)),
     INTAKING(Degrees.of(0)),
     NOT_INTAKING(Degrees.of(90));
 
@@ -67,7 +72,17 @@ public class IntakePivot extends SubsystemBase{
 
     m_motor.getConfigurator().apply(config);
 
+    setState(State.START);
     Logger.recordOutput("IntakePivot/AbsolutePosition", this.getAngle());
+  }
+
+  @Override
+  public void periodic() {
+    if (RobotBase.isSimulation()) {
+      double error = m_setpoint.in(Radians) - m_simAngleRadians;
+      double maximumStep = kSimMaxVelocityRadiansPerSecond * 0.02;
+      m_simAngleRadians += Math.max(-maximumStep, Math.min(maximumStep, error));
+    }
   }
 
   public void setAngle(Angle angle) {
@@ -75,12 +90,24 @@ public class IntakePivot extends SubsystemBase{
     m_motor.setControl(m_positionRequest.withPosition(angle.in(Rotations)));
   }
 
+  public void setState(State state) {
+    this.state = state;
+    setAngle(state.angle());
+  }
+
+  public Command setStateCommand(State state) {
+    return Commands.runOnce(() -> setState(state), this);
+  }
+
   public Command setAngleCommand(Angle angle) {
-    return Commands.run(() -> setAngle(angle));
+    return Commands.runOnce(() -> setAngle(angle), this);
   }
 
   @AutoLogOutput (key = "IntakePivot/Angle")
   public Angle getAngle() {
+    if (RobotBase.isSimulation()) {
+      return Radians.of(m_simAngleRadians);
+    }
     return m_encoder.getAbsolutePosition().getValue();
   }
 
@@ -115,6 +142,6 @@ public class IntakePivot extends SubsystemBase{
   }
 
   public void start() {
-    setAngle(State.START.angle());
+    setState(State.START);
   }
 }

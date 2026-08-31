@@ -3,6 +3,7 @@ package frc.robot.subsystems.shooter;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Seconds;
@@ -36,6 +37,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -43,8 +45,8 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 public class Hood extends SubsystemBase {
   private static final double kRotorToHoodRatio = 62.0 / 14.0;
 
-  private static final Angle kMinimumAngle = Degrees.of(0); 
-  private static final Angle kMaximumAngle = Degrees.of(18.75);
+  private static final Angle kMinimumAngle = Degrees.of(16.25);
+  private static final Angle kMaximumAngle = Degrees.of(35.0);
 
   private final TalonFX m_motor;
   private final CANcoder m_encoder;
@@ -63,6 +65,9 @@ public class Hood extends SubsystemBase {
   private final Alert m_stallAlert = new Alert("Hood is stalling", AlertType.kWarning);
 
   private Angle m_setpoint = Degrees.zero();
+  private double m_simAngleRadians = kMinimumAngle.in(Radians);
+
+  private static final double kSimMaxVelocityRadiansPerSecond = Math.toRadians(45.0);
 
   public Hood(int motorId, int encoderId) {
     m_motor = new TalonFX(motorId);
@@ -106,6 +111,7 @@ public class Hood extends SubsystemBase {
 
     m_currentSpikeTrigger = new Trigger(this::isCurrentSpiking);
     m_isNearSetpointTrigger = new Trigger(() -> isNearSetpoint(Degrees.of(1)));
+    setAngle(kMinimumAngle);
   }
 
   private static SoftwareLimitSwitchConfigs createSoftLimitConfig(boolean lowerLimitEnabled) {
@@ -123,6 +129,12 @@ public class Hood extends SubsystemBase {
 
   @Override
   public void periodic() {
+    if (RobotBase.isSimulation()) {
+      double error = m_setpoint.in(Radians) - m_simAngleRadians;
+      double maximumStep = kSimMaxVelocityRadiansPerSecond * 0.02;
+      m_simAngleRadians += Math.max(-maximumStep, Math.min(maximumStep, error));
+    }
+
     var encoderAbsolutePosition = m_encoder.getAbsolutePosition();
     encoderAbsolutePosition.refresh();
 
@@ -136,12 +148,23 @@ public class Hood extends SubsystemBase {
 
   @AutoLogOutput(key = "Hood/Position")
   public Angle getAngle() {
+    if (RobotBase.isSimulation()) {
+      return Radians.of(m_simAngleRadians);
+    }
     return m_motor.getPosition().getValue();
   }
 
   @AutoLogOutput(key = "Hood/AbsolutePosition")
   public Angle getAbsoluteAngle() {
+    if (RobotBase.isSimulation()) {
+      return Radians.of(m_simAngleRadians);
+    }
     return m_encoder.getAbsolutePosition().getValue();
+  }
+
+  /** Returns hood travel relative to the physical minimum for 3D visualization. */
+  public Angle getAngleFromMinimum() {
+    return getAngle().minus(kMinimumAngle);
   }
 
   @AutoLogOutput(key = "Hood/Velocity")
@@ -191,7 +214,15 @@ public class Hood extends SubsystemBase {
   }
 
   public Command setAngleCommand(Angle angle) {
-    return run(() -> setAngle(angle));
+    return runOnce(() -> setAngle(angle));
+  }
+
+  public Command setMinimumAngleCommand() {
+    return setAngleCommand(kMinimumAngle);
+  }
+
+  public Command setMaximumAngleCommand() {
+    return setAngleCommand(kMaximumAngle);
   }
 
   public Command setAngleCommand(Supplier<Angle> angleSupplier) {
@@ -207,6 +238,9 @@ public class Hood extends SubsystemBase {
   }
 
   public void setEncoderPosition(Angle angle) {
+    if (RobotBase.isSimulation()) {
+      m_simAngleRadians = angle.in(Radians);
+    }
     m_motor.setPosition(angle);
     m_encoder.setPosition(angle);
   }

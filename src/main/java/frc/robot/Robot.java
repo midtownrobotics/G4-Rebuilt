@@ -1,16 +1,22 @@
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Volts;
+
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
@@ -74,16 +80,48 @@ public class Robot extends LoggedRobot {
           ? m_driverController.getHID().getRawAxis(2)
           : m_driverController.getRightX();
       double omega = -MathUtil.applyDeadband(rotationAxis, 0.1);
-      m_drivetrain.runVelocity(new ChassisSpeeds(
+      ChassisSpeeds fieldRelativeSpeeds = new ChassisSpeeds(
           x * m_drivetrain.getMaxLinearSpeedMetersPerSec(),
           y * m_drivetrain.getMaxLinearSpeedMetersPerSec(),
-          omega * m_drivetrain.getMaxAngularSpeedRadPerSec()));
+          omega * m_drivetrain.getMaxAngularSpeedRadPerSec());
+      m_drivetrain.runVelocity(ChassisSpeeds.fromFieldRelativeSpeeds(
+          fieldRelativeSpeeds, m_drivetrain.getRotation()));
     }));
+
+    var intakeTrigger = m_driverController.leftTrigger(0.2);
+    intakeTrigger
+        .onTrue(m_intakePivot.setStateCommand(IntakePivot.State.INTAKING))
+        .whileTrue(m_intakeRoller.setVoltageCommand(Volts.of(12.0)))
+        .onFalse(Commands.parallel(
+            m_intakePivot.setStateCommand(IntakePivot.State.NOT_INTAKING),
+            m_intakeRoller.stopCommand()));
+
+    m_driverController.rightTrigger(0.2)
+        .onTrue(m_hood.setMaximumAngleCommand())
+        .onFalse(m_hood.setMinimumAngleCommand());
   }
 
   @Override
   public void robotPeriodic() {
     CommandScheduler.getInstance().run();
+
+    Logger.recordOutput("Controls/LeftTrigger", m_driverController.getLeftTriggerAxis());
+    Logger.recordOutput("Controls/RightTrigger", m_driverController.getRightTriggerAxis());
+    Logger.recordOutput("RobotViz/RobotPose", m_drivetrain.getPose());
+
+    double intakeAngleRadians = m_intakePivot.getAngle().in(Units.Radians);
+    double hoodAngleRadians = m_hood.getAngleFromMinimum().in(Units.Radians);
+    Logger.recordOutput("RobotViz/IntakeAngleRadians", intakeAngleRadians);
+    Logger.recordOutput("RobotViz/HoodAngleRadians", hoodAngleRadians);
+
+    // Both articulated mechanisms pivot about the robot's left-right (Y) axis.
+    // Component order must match the asset files: model_0 is the intake and model_1 is the hood.
+    Logger.recordOutput("RobotViz/G4ComponentPoses", new Pose3d[] {
+        new Pose3d(0.2778252, 0.0, 0.1905,
+            new Rotation3d(0.0, -intakeAngleRadians, 0.0)),
+        new Pose3d(-0.2881376, 0.0, 0.4881626,
+            new Rotation3d(0.0, -hoodAngleRadians, 0.0))
+    });
   }
 
   @Override
