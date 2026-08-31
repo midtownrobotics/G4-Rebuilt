@@ -2,17 +2,8 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.Volts;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
-import org.littletonrobotics.junction.LoggedRobot;
-import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.NT4Publisher;
-import org.littletonrobotics.junction.wpilog.WPILOGWriter;
-
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.SignalLogger;
-
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -34,10 +25,26 @@ import frc.robot.subsystems.drive.GyroIOSim;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.feeder.Feeder;
+import frc.robot.subsystems.feeder.FeederIOSim;
+import frc.robot.subsystems.feeder.FeederIOTalonFX;
 import frc.robot.subsystems.intake.IntakePivot;
+import frc.robot.subsystems.intake.IntakePivotIOSim;
+import frc.robot.subsystems.intake.IntakePivotIOTalonFX;
 import frc.robot.subsystems.intake.IntakeRoller;
+import frc.robot.subsystems.intake.IntakeRollerIOSim;
+import frc.robot.subsystems.intake.IntakeRollerIOTalonFX;
 import frc.robot.subsystems.shooter.Flywheel;
+import frc.robot.subsystems.shooter.FlywheelIOSim;
+import frc.robot.subsystems.shooter.FlywheelIOTalonFX;
 import frc.robot.subsystems.shooter.Hood;
+import frc.robot.subsystems.shooter.HoodIOSim;
+import frc.robot.subsystems.shooter.HoodIOTalonFX;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
 public class Robot extends LoggedRobot {
   private static final CANBus kMechanismCANBus = new CANBus("rio");
@@ -81,54 +88,68 @@ public class Robot extends LoggedRobot {
     DriverStation.silenceJoystickConnectionWarning(isSimulation());
 
     if (RobotBase.isReal()) {
-      m_drivetrain = new Drive(
-          new GyroIOPigeon2(),
-          new ModuleIOTalonFX(TunerConstants.FrontLeft),
-          new ModuleIOTalonFX(TunerConstants.FrontRight),
-          new ModuleIOTalonFX(TunerConstants.BackLeft),
-          new ModuleIOTalonFX(TunerConstants.BackRight));
+      m_drivetrain =
+          new Drive(
+              new GyroIOPigeon2(),
+              new ModuleIOTalonFX(TunerConstants.FrontLeft),
+              new ModuleIOTalonFX(TunerConstants.FrontRight),
+              new ModuleIOTalonFX(TunerConstants.BackLeft),
+              new ModuleIOTalonFX(TunerConstants.BackRight));
+      m_intakePivot = new IntakePivot(new IntakePivotIOTalonFX(23, 25));
+      m_intakeRoller = new IntakeRoller(new IntakeRollerIOTalonFX(24));
+      m_hood = new Hood(new HoodIOTalonFX(26, 27));
+      m_flywheel = new Flywheel(new FlywheelIOTalonFX(28, 29));
+      m_feeder = new Feeder(new FeederIOTalonFX(34, 36));
     } else {
-      m_drivetrain = new Drive(
-          new GyroIOSim(),
-          new ModuleIOSim(TunerConstants.FrontLeft),
-          new ModuleIOSim(TunerConstants.FrontRight),
-          new ModuleIOSim(TunerConstants.BackLeft),
-          new ModuleIOSim(TunerConstants.BackRight));
+      m_drivetrain =
+          new Drive(
+              new GyroIOSim(),
+              new ModuleIOSim(TunerConstants.FrontLeft),
+              new ModuleIOSim(TunerConstants.FrontRight),
+              new ModuleIOSim(TunerConstants.BackLeft),
+              new ModuleIOSim(TunerConstants.BackRight));
+      m_intakePivot = new IntakePivot(new IntakePivotIOSim());
+      m_intakeRoller = new IntakeRoller(new IntakeRollerIOSim());
+      m_hood = new Hood(new HoodIOSim());
+      m_flywheel = new Flywheel(new FlywheelIOSim());
+      m_feeder = new Feeder(new FeederIOSim());
     }
 
     // G3-2026 event-cmp mechanism CAN IDs.
-    m_intakePivot = new IntakePivot(23, 25);
-    m_intakeRoller = new IntakeRoller(24);
-    m_hood = new Hood(26, 27);
-    m_flywheel = new Flywheel(28, 29);
-    m_feeder = new Feeder(34, 36);
 
-    m_drivetrain.setDefaultCommand(m_drivetrain.run(() -> {
-      double x = -MathUtil.applyDeadband(m_driverController.getLeftY(), 0.1);
-      double y = -MathUtil.applyDeadband(m_driverController.getLeftX(), 0.1);
-      boolean usingKeyboardJoystick =
-          RobotBase.isSimulation() && DriverStation.getStickAxisCount(0) <= 3;
-      double rotationAxis = usingKeyboardJoystick
-          ? m_driverController.getHID().getRawAxis(2)
-          : m_driverController.getRightX();
-      double omega = -MathUtil.applyDeadband(rotationAxis, 0.1);
-      ChassisSpeeds fieldRelativeSpeeds = new ChassisSpeeds(
-          x * m_drivetrain.getMaxLinearSpeedMetersPerSec(),
-          y * m_drivetrain.getMaxLinearSpeedMetersPerSec(),
-          omega * m_drivetrain.getMaxAngularSpeedRadPerSec());
-      m_drivetrain.runVelocity(ChassisSpeeds.fromFieldRelativeSpeeds(
-          fieldRelativeSpeeds, m_drivetrain.getRotation()));
-    }));
+    m_drivetrain.setDefaultCommand(
+        m_drivetrain.run(
+            () -> {
+              double x = -MathUtil.applyDeadband(m_driverController.getLeftY(), 0.1);
+              double y = -MathUtil.applyDeadband(m_driverController.getLeftX(), 0.1);
+              boolean usingKeyboardJoystick =
+                  RobotBase.isSimulation() && DriverStation.getStickAxisCount(0) <= 3;
+              double rotationAxis =
+                  usingKeyboardJoystick
+                      ? m_driverController.getHID().getRawAxis(2)
+                      : m_driverController.getRightX();
+              double omega = -MathUtil.applyDeadband(rotationAxis, 0.1);
+              ChassisSpeeds fieldRelativeSpeeds =
+                  new ChassisSpeeds(
+                      x * m_drivetrain.getMaxLinearSpeedMetersPerSec(),
+                      y * m_drivetrain.getMaxLinearSpeedMetersPerSec(),
+                      omega * m_drivetrain.getMaxAngularSpeedRadPerSec());
+              m_drivetrain.runVelocity(
+                  ChassisSpeeds.fromFieldRelativeSpeeds(
+                      fieldRelativeSpeeds, m_drivetrain.getRotation()));
+            }));
 
     var intakeTrigger = m_driverController.leftTrigger(0.2);
     intakeTrigger
         .onTrue(m_intakePivot.setStateCommand(IntakePivot.State.INTAKING))
         .whileTrue(m_intakeRoller.setVoltageCommand(Volts.of(12.0)))
-        .onFalse(Commands.parallel(
-            m_intakePivot.setStateCommand(IntakePivot.State.NOT_INTAKING),
-            m_intakeRoller.stopCommand()));
+        .onFalse(
+            Commands.parallel(
+                m_intakePivot.setStateCommand(IntakePivot.State.NOT_INTAKING),
+                m_intakeRoller.stopCommand()));
 
-    m_driverController.rightTrigger(0.2)
+    m_driverController
+        .rightTrigger(0.2)
         .onTrue(m_hood.setMaximumAngleCommand())
         .onFalse(m_hood.setMinimumAngleCommand());
 
@@ -158,12 +179,12 @@ public class Robot extends LoggedRobot {
 
     // Both articulated mechanisms pivot about the robot's left-right (Y) axis.
     // Component order must match the asset files: model_0 is the intake and model_1 is the hood.
-    Logger.recordOutput("RobotViz/G4ComponentPoses", new Pose3d[] {
-        new Pose3d(0.2778252, 0.0, 0.1905,
-            new Rotation3d(0.0, -intakeAngleRadians, 0.0)),
-        new Pose3d(-0.2881376, 0.0, 0.4881626,
-            new Rotation3d(0.0, -hoodAngleRadians, 0.0))
-    });
+    Logger.recordOutput(
+        "RobotViz/G4ComponentPoses",
+        new Pose3d[] {
+          new Pose3d(0.2778252, 0.0, 0.1905, new Rotation3d(0.0, -intakeAngleRadians, 0.0)),
+          new Pose3d(-0.2881376, 0.0, 0.4881626, new Rotation3d(0.0, -hoodAngleRadians, 0.0))
+        });
 
     LoggedCommandScheduler.periodic();
   }

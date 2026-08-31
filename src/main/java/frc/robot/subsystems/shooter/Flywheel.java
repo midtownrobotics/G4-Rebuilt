@@ -1,197 +1,88 @@
 package frc.robot.subsystems.shooter;
 
-import static edu.wpi.first.units.Units.Amps;
-import static edu.wpi.first.units.Units.RPM;
-import static edu.wpi.first.units.Units.RotationsPerSecond;
-import static edu.wpi.first.units.Units.Volts;
+import static edu.wpi.first.units.Units.*;
 
-import org.littletonrobotics.junction.AutoLogOutput;
-import org.littletonrobotics.junction.Logger;
-
-import com.ctre.phoenix6.configs.Slot0Configs;
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.controls.VoltageOut;
-import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.NeutralModeValue;
-
-import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.units.measure.Current;
-import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.*;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.lib.LoggedTunableNumber;
+import org.littletonrobotics.junction.Logger;
 
 public class Flywheel extends SubsystemBase {
-  private static final double kHoodRollerRatio = 28.0 / 30.0;
-  private static final double kBackRollerRatio = 30.0 / 30.0;
+  private final FlywheelIO io;
+  private final FlywheelIOInputsAutoLogged inputs = new FlywheelIOInputsAutoLogged();
+  private final LoggedTunableNumber p = new LoggedTunableNumber("Flywheel/kP", 0),
+      i = new LoggedTunableNumber("Flywheel/kI", 0),
+      d = new LoggedTunableNumber("Flywheel/kD", 0),
+      s = new LoggedTunableNumber("Flywheel/kS", 0),
+      v = new LoggedTunableNumber("Flywheel/kV", 0);
+  private final Alert hoodAlert = new Alert("Shooter hood roller disconnected", AlertType.kWarning),
+      backAlert = new Alert("Shooter back roller disconnected", AlertType.kWarning),
+      hoodStall = new Alert("Shooter hood roller stalling", AlertType.kWarning),
+      backStall = new Alert("Shooter back roller stalling", AlertType.kWarning);
+  private final Trigger near = new Trigger(() -> isNearSetpoint(RPM.of(50)));
 
-  private static final double kStallCurrentAmps = 68.0;
-  private static final double kStallVelocityRPS = 2.0;
-
-  private final LoggedTunableNumber m_kP = new LoggedTunableNumber("Flywheel/kP", 0.0);
-  private final LoggedTunableNumber m_kI = new LoggedTunableNumber("Flywheel/kI", 0.0);
-  private final LoggedTunableNumber m_kD = new LoggedTunableNumber("Flywheel/kD", 0.0);
-  private final LoggedTunableNumber m_kS = new LoggedTunableNumber("Flywheel/kS", 0.0);
-  private final LoggedTunableNumber m_kV = new LoggedTunableNumber("Flywheel/kV", 0.0);
-
-  private final TalonFX m_hoodRollerMotor;
-  private final TalonFX m_backRollerMotor;
-
-  private final VelocityVoltage m_hoodVelocityRequest = new VelocityVoltage(0).withEnableFOC(true);
-  private final VelocityVoltage m_backVelocityRequest = new VelocityVoltage(0).withEnableFOC(true);
-  private final VoltageOut m_hoodVoltageRequest = new VoltageOut(0);
-  private final VoltageOut m_backVoltageRequest = new VoltageOut(0);
-
-  private final Alert m_hoodRollerConnectionAlert = new Alert(
-      "Shooter hood roller motor is not connected", AlertType.kWarning);
-  private final Alert m_backRollerConnectionAlert = new Alert(
-      "Shooter back roller motor is not connected", AlertType.kWarning);
-  private final Alert m_hoodRollerStallAlert = new Alert(
-      "Shooter hood roller motor is stalling", AlertType.kWarning);
-  private final Alert m_backRollerStallAlert = new Alert(
-      "Shooter back roller motor is stalling", AlertType.kWarning);
-
-  private final Trigger m_isNearSetpointTrigger;
-
-  private AngularVelocity m_setpoint = RPM.zero();
-
-  public Flywheel(int hoodRollerMotorId, int backRollerMotorId) {
-    m_hoodRollerMotor = new TalonFX(hoodRollerMotorId);
-    m_backRollerMotor = new TalonFX(backRollerMotorId);
-
-    configureMotor(m_hoodRollerMotor, kHoodRollerRatio);
-    configureMotor(m_backRollerMotor, kBackRollerRatio);
-
-    m_isNearSetpointTrigger = new Trigger(() -> isNearSetpoint(RPM.of(50)));
-  }
-
-  private static void configureMotor(TalonFX motor, double motorToRollerRatio) {
-    TalonFXConfiguration config = new TalonFXConfiguration();
-    config.Feedback.SensorToMechanismRatio = motorToRollerRatio;
-    config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
-    motor.getConfigurator().apply(config);
+  public Flywheel(FlywheelIO io) {
+    this.io = io;
   }
 
   @Override
   public void periodic() {
+    io.updateInputs(inputs);
+    Logger.processInputs("Flywheel", inputs);
     LoggedTunableNumber.ifChanged(
-        hashCode(),
-        values -> setPID(values[0], values[1], values[2], values[3], values[4]),
-        m_kP, m_kI, m_kD, m_kS, m_kV);
-
-    AngularVelocity hoodVelocity = getHoodRollerVelocity();
-    AngularVelocity backVelocity = getBackRollerVelocity();
-
-    boolean hoodHighCurrent = m_hoodRollerMotor.getStatorCurrent().getValue().gt(Amps.of(kStallCurrentAmps));
-    boolean hoodNotMoving = Math.abs(hoodVelocity.in(RotationsPerSecond)) < kStallVelocityRPS;
-    boolean backHighCurrent = m_backRollerMotor.getStatorCurrent().getValue().gt(Amps.of(kStallCurrentAmps));
-    boolean backNotMoving = Math.abs(backVelocity.in(RotationsPerSecond)) < kStallVelocityRPS;
-
-    m_hoodRollerConnectionAlert.set(!m_hoodRollerMotor.isAlive());
-    m_backRollerConnectionAlert.set(!m_backRollerMotor.isAlive());
-    m_hoodRollerStallAlert.set(hoodHighCurrent && hoodNotMoving);
-    m_backRollerStallAlert.set(backHighCurrent && backNotMoving);
-
-    Logger.recordOutput("Flywheel/IsNearSetpoint", m_isNearSetpointTrigger.getAsBoolean());
+        hashCode(), x -> io.setPID(x[0], x[1], x[2], x[3], x[4]), p, i, d, s, v);
+    hoodAlert.set(!inputs.hoodConnected);
+    backAlert.set(!inputs.backConnected);
+    hoodStall.set(
+        inputs.hoodStatorCurrent.gt(Amps.of(68))
+            && inputs.hoodVelocity.abs(RotationsPerSecond) < 2);
+    backStall.set(
+        inputs.backStatorCurrent.gt(Amps.of(68))
+            && inputs.backVelocity.abs(RotationsPerSecond) < 2);
+    Logger.recordOutput("Flywheel/IsNearSetpoint", near.getAsBoolean());
   }
 
-  @AutoLogOutput (key = "Flywheel/HoodRollerVelocity")
   public AngularVelocity getHoodRollerVelocity() {
-    return m_hoodRollerMotor.getVelocity().getValue();
+    return inputs.hoodVelocity;
   }
 
-  @AutoLogOutput (key = "Flywheel/BackRollerVelocity")
   public AngularVelocity getBackRollerVelocity() {
-    return m_backRollerMotor.getVelocity().getValue();
-  }
-
-  @AutoLogOutput(key = "Flywheel/HoodRollerAppliedVoltage")
-  public Voltage getHoodRollerAppliedVoltage() {
-    return m_hoodRollerMotor.getMotorVoltage().getValue();
-  }
-
-  @AutoLogOutput(key = "Flywheel/BackRollerAppliedVoltage")
-  public Voltage getBackRollerAppliedVoltage() {
-    return m_backRollerMotor.getMotorVoltage().getValue();
-  }
-
-  @AutoLogOutput(key = "Flywheel/HoodRollerStatorCurrent")
-  public Current getHoodRollerStatorCurrent() {
-    return m_hoodRollerMotor.getStatorCurrent().getValue();
-  }
-
-  @AutoLogOutput(key = "Flywheel/BackRollerStatorCurrent")
-  public Current getBackRollerStatorCurrent() {
-    return m_backRollerMotor.getStatorCurrent().getValue();
-  }
-
-  @AutoLogOutput(key = "Flywheel/HoodRollerSupplyCurrent")
-  public Current getHoodRollerSupplyCurrent() {
-    return m_hoodRollerMotor.getSupplyCurrent().getValue();
-  }
-
-  @AutoLogOutput(key = "Flywheel/BackRollerSupplyCurrent")
-  public Current getBackRollerSupplyCurrent() {
-    return m_backRollerMotor.getSupplyCurrent().getValue();
-  }
-
-  @AutoLogOutput (key = "Flywheel/Setpoint")
-  public AngularVelocity getSetpoint() {
-    return m_setpoint;
+    return inputs.backVelocity;
   }
 
   public boolean isNearSetpoint(AngularVelocity tolerance) {
-    return getHoodRollerVelocity().isNear(m_setpoint, tolerance)
-        && getBackRollerVelocity().isNear(m_setpoint, tolerance);
+    return inputs.hoodVelocity.isNear(inputs.setpoint, tolerance)
+        && inputs.backVelocity.isNear(inputs.setpoint, tolerance);
   }
-  
+
   public Trigger isNearSetpointTrigger() {
-    return m_isNearSetpointTrigger;
+    return near;
   }
 
   public void setVelocity(AngularVelocity velocity) {
-    m_setpoint = velocity;
-    double rotationsPerSecond = velocity.in(RotationsPerSecond);
-    m_hoodRollerMotor.setControl(m_hoodVelocityRequest.withVelocity(rotationsPerSecond));
-    m_backRollerMotor.setControl(m_backVelocityRequest.withVelocity(rotationsPerSecond));
+    io.setVelocity(velocity);
   }
 
   public Command setVelocityCommand(AngularVelocity velocity) {
-    return run(() -> setVelocity(velocity));
+    return run(() -> io.setVelocity(velocity));
   }
 
   public void setVoltage(Voltage voltage) {
-    m_setpoint = RPM.zero();
-    m_hoodRollerMotor.setControl(m_hoodVoltageRequest.withOutput(voltage.in(Volts)));
-    m_backRollerMotor.setControl(m_backVoltageRequest.withOutput(voltage.in(Volts)));
+    io.setVoltage(voltage);
   }
 
   public Command setVoltageCommand(Voltage voltage) {
-    return run(() -> setVoltage(voltage));
-  }
-
-  public void setPID(double kP, double kI, double kD, double kS, double kV) {
-    Slot0Configs gains = new Slot0Configs()
-        .withKP(kP)
-        .withKI(kI)
-        .withKD(kD)
-        .withKS(kS)
-        .withKV(kV);
-    m_hoodRollerMotor.getConfigurator().apply(gains);
-    m_backRollerMotor.getConfigurator().apply(gains);
+    return run(() -> io.setVoltage(voltage));
   }
 
   public void stop() {
-    m_setpoint = RPM.zero();
-    m_hoodRollerMotor.stopMotor();
-    m_backRollerMotor.stopMotor();
+    io.stop();
   }
 
   public Command stopCommand() {
-    return runOnce(this::stop);
+    return runOnce(io::stop);
   }
 }

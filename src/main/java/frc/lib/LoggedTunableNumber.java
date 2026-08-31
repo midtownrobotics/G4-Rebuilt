@@ -1,14 +1,12 @@
 package frc.lib;
 
+import frc.robot.constants.Constants;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
-
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
-
-import frc.robot.constants.Constants;
 
 /** A G3-style AdvantageKit number that is editable under {@code /Tuning} in tuning mode. */
 public class LoggedTunableNumber implements DoubleSupplier {
