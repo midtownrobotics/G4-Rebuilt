@@ -40,6 +40,9 @@ import frc.robot.subsystems.shooter.FlywheelIOTalonFX;
 import frc.robot.subsystems.shooter.Hood;
 import frc.robot.subsystems.shooter.HoodIOSim;
 import frc.robot.subsystems.shooter.HoodIOTalonFX;
+import frc.robot.subsystems.vision.Camera;
+import frc.robot.subsystems.vision.Vision;
+import frc.robot.subsystems.vision.VisionConstants;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import org.littletonrobotics.junction.LoggedRobot;
@@ -59,6 +62,7 @@ public class Robot extends LoggedRobot {
   private final Hood m_hood;
   private final Flywheel m_flywheel;
   private final Feeder m_feeder;
+  private final Vision m_vision;
   private final RobotCommands m_robotCommands;
 
   private final AutoFactory m_autoFactory;
@@ -120,6 +124,16 @@ public class Robot extends LoggedRobot {
       m_flywheel = new Flywheel(new FlywheelIOSim());
       m_feeder = new Feeder(new FeederIOSim());
     }
+
+    Camera camera = new Camera(VisionConstants.kCameraName, VisionConstants.kRobotToCamera);
+    m_vision =
+        new Vision(
+            observation ->
+                m_drivetrain.addVisionMeasurement(
+                    observation.pose(), observation.timestamp(), observation.standardDevs()),
+            m_drivetrain::getPose,
+            m_drivetrain::resetPose,
+            camera);
 
     // G3-2026 event-cmp mechanism CAN IDs.
 
