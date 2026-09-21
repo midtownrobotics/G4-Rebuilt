@@ -69,6 +69,8 @@ public class Robot extends LoggedRobot {
   private final AutoRoutines m_autoRoutines;
   private final AutoChooser m_autoChooser;
 
+  private int m_canBusCounter;
+
   public Robot() {
     Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
     Logger.recordMetadata("BuildDate", BuildConstants.BUILD_DATE);
@@ -197,8 +199,11 @@ public class Robot extends LoggedRobot {
   public void robotPeriodic() {
     CommandScheduler.getInstance().run();
 
-    Logger.recordOutput("CanBusUsage/Drive", TunerConstants.kCANBus.getStatus().BusUtilization);
-    Logger.recordOutput("CanBusUsage/Mechs", kMechanismCANBus.getStatus().BusUtilization);
+    m_canBusCounter++;
+    if (m_canBusCounter % 25 == 0) {
+      Logger.recordOutput("CanBusUsage/Drive", TunerConstants.kCANBus.getStatus().BusUtilization);
+      Logger.recordOutput("CanBusUsage/Mechs", kMechanismCANBus.getStatus().BusUtilization);
+    }
     Logger.recordOutput("matchTime", DriverStation.getMatchTime());
     Logger.recordOutput("RobotViz/RobotPose", m_drivetrain.getPose());
 
