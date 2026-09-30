@@ -2,12 +2,11 @@ package frc.robot.commands;
 
 import static edu.wpi.first.units.Units.Volts;
 
-import com.google.flatbuffers.Constants;
-
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.constants.Constants;
 import frc.robot.controls.Controls;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.feeder.Feeder;
@@ -133,6 +132,9 @@ public class RobotCommands {
   }
 
   public Command revFlyweel() {
-    return m_flywheel.setVoltageCommand(Constants.kFlywheelVolts).finallyDo(() -> m_flywheel.stop())
+    return m_flywheel
+        .setVoltageCommand(Constants.kFlywheelVolts)
+        .finallyDo(() -> m_flywheel.stop())
+        .withName("revFlyweel");
   }
 }
