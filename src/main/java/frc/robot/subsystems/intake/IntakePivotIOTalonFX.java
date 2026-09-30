@@ -5,6 +5,7 @@ import static edu.wpi.first.units.Units.Rotations;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
@@ -18,6 +19,8 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 
 public class IntakePivotIOTalonFX implements IntakePivotIO {
+  private static final double ROTOR_TO_MECHANISM_RATIO = 0.0237;
+
   private final TalonFX motor;
   private final CANcoder encoder;
   private final MotionMagicVoltage positionRequest = new MotionMagicVoltage(0).withEnableFOC(true);
@@ -36,7 +39,11 @@ public class IntakePivotIOTalonFX implements IntakePivotIO {
     TalonFXConfiguration config = new TalonFXConfiguration();
     config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
     config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
-    config.Feedback.SensorToMechanismRatio = 0.0237;
+    config.Feedback =
+        new FeedbackConfigs()
+            .withSensorToMechanismRatio(1.0)
+            .withRotorToSensorRatio(1.0 / ROTOR_TO_MECHANISM_RATIO)
+            .withFusedCANcoder(encoder);
     config.CurrentLimits.StatorCurrentLimit = 120.0;
     config.CurrentLimits.StatorCurrentLimitEnable = true;
     config.CurrentLimits.SupplyCurrentLimit = 70.0;
@@ -47,7 +54,7 @@ public class IntakePivotIOTalonFX implements IntakePivotIO {
 
     position = motor.getPosition();
     absolutePosition = encoder.getAbsolutePosition();
-    velocity = encoder.getVelocity();
+    velocity = motor.getVelocity();
     voltage = motor.getMotorVoltage();
     statorCurrent = motor.getStatorCurrent();
     supplyCurrent = motor.getSupplyCurrent();
@@ -61,7 +68,7 @@ public class IntakePivotIOTalonFX implements IntakePivotIO {
   public void updateInputs(IntakePivotIOInputs inputs) {
     BaseStatusSignal.refreshAll(
         position, absolutePosition, velocity, voltage, statorCurrent, supplyCurrent);
-    inputs.position = absolutePosition.getValue();
+    inputs.position = position.getValue();
     inputs.absolutePosition = absolutePosition.getValue();
     inputs.velocity = velocity.getValue();
     inputs.appliedVoltage = voltage.getValue();

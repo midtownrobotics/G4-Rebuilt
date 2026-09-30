@@ -75,7 +75,7 @@ public final class Autos {
     BackwardsBump.done().onTrue(bumpToTrenchFixedShot.cmd());
 
     bumpToTrenchFixedShot.active().onTrue(
-        m_robotCommands.shoot().until(bumpToTrenchFixedShot.atTime("stopshoot")));
+        m_robotCommands.shoot().until(bumpToTrenchFixedShot.atTime("PrepareForSweep")));
     bumpToTrenchFixedShot.done().onTrue(TrenchSweep2.cmd());
 
     TrenchSweep2.atTime("startintake").onTrue(m_robotCommands.runIntake());
@@ -107,7 +107,7 @@ public final class Autos {
     BackwardsBump.done().onTrue(bumpToTrenchFixedShot.cmd());
 
     bumpToTrenchFixedShot.active().onTrue(
-        m_robotCommands.shoot().until(bumpToTrenchFixedShot.atTime("stopshoot")));
+        m_robotCommands.shoot().until(bumpToTrenchFixedShot.atTime("PrepareForSweep")));
 
     bumpToTrenchFixedShot.done().onTrue(TrenchSweep2.cmd());
 
@@ -217,8 +217,7 @@ public final class Autos {
 
     CenterDepot.active().onTrue(m_robotCommands.runIntake());
     CenterDepot.active().onTrue(m_robotCommands.revFlyweel());
-    CenterDepot.done().onTrue(m_robotCommands.shoot());
-    CenterDepot.doneDelayed(8);
+    CenterDepot.done().onTrue(m_robotCommands.shoot().withTimeout(Seconds.of(8)));
 
     routine.active().onTrue(
         Commands.sequence(

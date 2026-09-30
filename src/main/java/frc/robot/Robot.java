@@ -167,8 +167,6 @@ public class Robot extends LoggedRobot {
     m_autos = new Autos(m_autoFactory, m_drivetrain, m_robotCommands);
     m_autoChooser = new AutoChooser("Do Nothing");
 
-    generateAutoChooser();
-
     SmartDashboard.putData(
         "StartSignalLogger", Commands.runOnce(SignalLogger::start).ignoringDisable(true));
     SmartDashboard.putData(
@@ -189,7 +187,9 @@ public class Robot extends LoggedRobot {
     m_controls.decreaseHoodAngle().onTrue(m_robotCommands.decreaseHoodAngle());
     Trigger dump = m_controls.dump();
     dump.whileTrue(m_robotCommands.dump());
-    dump.and(m_robotCommands.aligned().debounce(0.1)).whileTrue(m_robotCommands.shoot());
+    dump.and(m_robotCommands.aligned().debounce(0.1))
+        .and(m_controls.disableShooting().negate())
+        .whileTrue(m_robotCommands.shoot());
 
     // G4 does not yet expose the G3 homing routines, so the matching chords return to the
     // known mechanism reference positions.

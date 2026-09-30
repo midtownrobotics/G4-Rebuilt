@@ -68,7 +68,7 @@ public class Flywheel extends SubsystemBase {
   }
 
   public Command setVelocityCommand(AngularVelocity velocity) {
-    return run(() -> io.setVelocity(velocity));
+    return run(() -> io.setVelocity(velocity)).finallyDo(io::stop);
   }
 
   public void setVoltage(Voltage voltage) {
