@@ -8,6 +8,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants;
 import frc.robot.constants.FieldConstants;
 import frc.robot.controls.Controls;
@@ -20,6 +21,8 @@ import frc.robot.subsystems.shooter.Hood;
 
 /** Builds the reusable commands used by G4 controls and autonomous routines. */
 public class RobotCommands {
+  private static final double kHubAlignmentToleranceRadians = Math.toRadians(1.0);
+
   private final Controls m_controls;
   private final Drive m_drive;
   private final IntakePivot m_intakePivot;
@@ -27,6 +30,7 @@ public class RobotCommands {
   private final Hood m_hood;
   private final Flywheel m_flywheel;
   private final Feeder m_feeder;
+  private final Trigger m_aligned;
 
   public RobotCommands(
       Controls controls,
@@ -43,6 +47,7 @@ public class RobotCommands {
     m_hood = hood;
     m_flywheel = flywheel;
     m_feeder = feeder;
+    m_aligned = new Trigger(this::isAlignedToHub);
   }
 
   public Command driveCommand() {
@@ -68,11 +73,7 @@ public class RobotCommands {
     return m_drive
         .run(
             () -> {
-              Rotation2d targetHeading =
-                  FieldConstants.getHubPosition2d()
-                      .minus(m_drive.getPose().getTranslation())
-                      .getAngle()
-                      .minus(new Rotation2d(Constants.kFixedShooterRotation));
+              Rotation2d targetHeading = getHubTargetHeading();
               double omegaRadiansPerSecond =
                   MathUtil.clamp(
                       headingController.calculate(
@@ -93,8 +94,24 @@ public class RobotCommands {
         .withName("alignToHub");
   }
 
+  private Rotation2d getHubTargetHeading() {
+    return FieldConstants.getHubPosition2d()
+        .minus(m_drive.getPose().getTranslation())
+        .getAngle()
+        .minus(new Rotation2d(Constants.kFixedShooterRotation));
+  }
+
+  private boolean isAlignedToHub() {
+    return Math.abs(m_drive.getRotation().minus(getHubTargetHeading()).getRadians())
+        <= kHubAlignmentToleranceRadians;
+  }
+
+  public Trigger aligned() {
+    return m_aligned;
+  }
+
   public Command dump() {
-    return Commands.parallel(alignToHub(), shoot()).withName("dump");
+    return alignToHub().withName("dump");
   }
 
   public Command idle() {
