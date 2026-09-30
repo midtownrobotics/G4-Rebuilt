@@ -1,8 +1,8 @@
 {
   "java.configuration.updateBuildConfiguration": "automatic",
   "java.server.launchMode": "Standard",
-  "java.jdt.ls.java.home": "C:\\Users\\Public\\wpilib\\2026\\jdk",
-  "java.import.gradle.java.home": "C:\\Users\\Public\\wpilib\\2026\\jdk",
+  "java.jdt.ls.java.home": "/Users/maxquinn/wpilib/2026/jdk",
+  "java.import.gradle.java.home": "/Users/maxquinn/wpilib/2026/jdk",
   "java.import.gradle.wrapper.enabled": true,
   "java.import.gradle.annotationProcessing.enabled": false,
   "java.completion.favoriteStaticMembers": [

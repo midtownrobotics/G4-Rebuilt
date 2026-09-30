@@ -2,11 +2,13 @@ package frc.robot;
 
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.SignalLogger;
+
 import choreo.auto.AutoChooser;
 import choreo.auto.AutoFactory;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.units.Units;
+import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
@@ -15,6 +17,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
+import frc.robot.commands.Autos;
 import frc.robot.controls.Controls;
 import frc.robot.controls.XboxControls;
 import frc.lib.LoggedCommandScheduler;
@@ -54,6 +57,7 @@ public class Robot extends LoggedRobot {
   private static final CANBus kMechanismCANBus = new CANBus("rio");
 
   private Command m_autonomousCommand;
+  private AutoChooser m_chooser;
 
   private final Controls m_controls = new XboxControls(0);
   private final Drive m_drivetrain;
@@ -171,12 +175,8 @@ public class Robot extends LoggedRobot {
         "StopSignalLogger", Commands.runOnce(SignalLogger::stop).ignoringDisable(true));
 
     LoggedCommandScheduler.init(CommandScheduler.getInstance());
-  }
 
-  private void generateAutoChooser() {
-    // Add routines here once G4 autonomous paths are ready.
-    SmartDashboard.putData("Auto Chooser", m_autoChooser);
-    RobotModeTriggers.autonomous().whileTrue(m_autoChooser.selectedCommandScheduler());
+    generateAutoChooser();
   }
 
   private void configureBindings() {
@@ -227,6 +227,8 @@ public class Robot extends LoggedRobot {
   @Override
   public void simulationInit() {
     DriverStationSim.setDsAttached(true);
+    // Choreo's AutoRoutine.poll() no-ops until the alliance is known, so give sim one.
+    DriverStationSim.setAllianceStationId(AllianceStationID.Blue1);
     DriverStationSim.setAutonomous(false);
     DriverStationSim.setEnabled(true);
     DriverStationSim.notifyNewData();
@@ -234,6 +236,19 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void autonomousInit() {}
+
+  private void generateAutoChooser() {
+    m_chooser = new AutoChooser();
+    Autos autos = new Autos(m_drivetrain, m_intakePivot);
+    m_chooser.addRoutine("Madtown Left", autos::MadtownLeft);
+    m_chooser.addRoutine("Madtown Right", autos::MadtownRight);
+    m_chooser.addRoutine("Hub Swipe Left", autos::HubSwipeLeft);
+    m_chooser.addRoutine("Hub Swipe Right", autos::HubSwipeRight);
+    m_chooser.addRoutine("1002 Left", autos::copy1002left);
+    m_chooser.addRoutine("1002 Right", autos::copy1002right);
+    RobotModeTriggers.autonomous().whileTrue(m_chooser.selectedCommandScheduler());
+    SmartDashboard.putData("Auto Chooser", m_chooser);
+  }
 
   @Override
   public void teleopInit() {
