@@ -2,11 +2,22 @@ package frc.robot.commands;
 
 import static edu.wpi.first.units.Units.Volts;
 
+<<<<<<< HEAD
 import frc.robot.constants.Constants;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+=======
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.constants.Constants;
+import frc.robot.constants.FieldConstants;
+>>>>>>> 3e3d3828ef44e2cc985131bca0a48e2f887e6b38
 import frc.robot.controls.Controls;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.feeder.Feeder;
@@ -56,6 +67,42 @@ public class RobotCommands {
                       fieldRelativeSpeeds, m_drive.getRotation()));
             })
         .withName("driveCommand");
+  }
+
+  public Command alignToHub() {
+    PIDController headingController = new PIDController(7.0, 0.0, 0.0);
+    headingController.enableContinuousInput(-Math.PI, Math.PI);
+
+    return m_drive
+        .run(
+            () -> {
+              Rotation2d targetHeading =
+                  FieldConstants.getHubPosition2d()
+                      .minus(m_drive.getPose().getTranslation())
+                      .getAngle()
+                      .minus(new Rotation2d(Constants.kFixedShooterRotation));
+              double omegaRadiansPerSecond =
+                  MathUtil.clamp(
+                      headingController.calculate(
+                          m_drive.getRotation().getRadians(), targetHeading.getRadians()),
+                      -m_drive.getMaxAngularSpeedRadPerSec(),
+                      m_drive.getMaxAngularSpeedRadPerSec());
+
+              ChassisSpeeds fieldRelativeSpeeds =
+                  new ChassisSpeeds(
+                      m_controls.getDriveForward() * m_drive.getMaxLinearSpeedMetersPerSec(),
+                      m_controls.getDriveLeft() * m_drive.getMaxLinearSpeedMetersPerSec(),
+                      omegaRadiansPerSecond);
+              m_drive.runVelocity(
+                  ChassisSpeeds.fromFieldRelativeSpeeds(
+                      fieldRelativeSpeeds, m_drive.getRotation()));
+            })
+        .beforeStarting(headingController::reset)
+        .withName("alignToHub");
+  }
+
+  public Command dump() {
+    return Commands.parallel(alignToHub(), shoot()).withName("dump");
   }
 
   public Command idle() {

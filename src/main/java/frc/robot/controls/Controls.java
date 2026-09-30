@@ -19,7 +19,7 @@ public interface Controls {
 
   Trigger shoot();
 
-  Trigger snowBlow();
+  Trigger dump();
 
   Trigger unjam();
 

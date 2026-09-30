@@ -65,17 +65,29 @@ public final class Autos {
     AutoTrajectory TrenchSweep2 = routine.trajectory("TrenchSweep").mirrorY();
     AutoTrajectory BackwardsBump = routine.trajectory("BackwardsBump").mirrorY();
     AutoTrajectory BackwardsBump2 = routine.trajectory("BackwardsBump").mirrorY();
+<<<<<<< HEAD
     AutoTrajectory BumpToTrenchSOTM = routine.trajectory("BumpToTrench").mirrorY();
+=======
+    AutoTrajectory bumpToTrenchFixedShot = routine.trajectory("BumpToTrenchFixedShot").mirrorY();
+>>>>>>> 3e3d3828ef44e2cc985131bca0a48e2f887e6b38
 
     TrenchSweep.active().onTrue(m_robotCommands.runIntake());
     TrenchSweep.atTime("startintake").onTrue(m_robotCommands.runIntake());
     TrenchSweep.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
     TrenchSweep.done().onTrue(BackwardsBump.cmd());
 
+<<<<<<< HEAD
     BackwardsBump.done().onTrue(m_robotCommands.shoot());
     BackwardsBump.doneDelayed(7.5).onTrue(BumpToTrenchSOTM.cmd().alongWith(m_robotCommands.stopShooting()));
 
     BumpToTrenchSOTM.done().onTrue(TrenchSweep2.cmd());
+=======
+    BackwardsBump.done().onTrue(bumpToTrenchFixedShot.cmd());
+
+    bumpToTrenchFixedShot.active().onTrue(
+        m_robotCommands.shoot().until(bumpToTrenchFixedShot.atTime("stopshoot")));
+    bumpToTrenchFixedShot.done().onTrue(TrenchSweep2.cmd());
+>>>>>>> 3e3d3828ef44e2cc985131bca0a48e2f887e6b38
 
     TrenchSweep2.atTime("startintake").onTrue(m_robotCommands.runIntake());
     TrenchSweep2.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
@@ -96,18 +108,19 @@ public final class Autos {
     AutoTrajectory TrenchSweep2 = routine.trajectory("TrenchSweep");
     AutoTrajectory BackwardsBump = routine.trajectory("BackwardsBump");
     AutoTrajectory BackwardsBump2 = routine.trajectory("BackwardsBump");
-    AutoTrajectory BumpToTrenchSOTM = routine.trajectory("BumpToTrenchSOTM");
+    AutoTrajectory bumpToTrenchFixedShot = routine.trajectory("BumpToTrenchFixedShot");
 
     TrenchSweep.active().onTrue(m_robotCommands.runIntake());
     TrenchSweep.atTime("startintake").onTrue(m_robotCommands.runIntake());
     TrenchSweep.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
     TrenchSweep.done().onTrue(BackwardsBump.cmd());
 
-    BackwardsBump.done().onTrue(BumpToTrenchSOTM.cmd());
+    BackwardsBump.done().onTrue(bumpToTrenchFixedShot.cmd());
 
-    BumpToTrenchSOTM.active().onTrue(m_robotCommands.shoot().until(BumpToTrenchSOTM.atTime("stopshoot")));
+    bumpToTrenchFixedShot.active().onTrue(
+        m_robotCommands.shoot().until(bumpToTrenchFixedShot.atTime("stopshoot")));
 
-    BumpToTrenchSOTM.done().onTrue(TrenchSweep2.cmd());
+    bumpToTrenchFixedShot.done().onTrue(TrenchSweep2.cmd());
 
     TrenchSweep2.atTime("startintake").onTrue(m_robotCommands.runIntake());
     TrenchSweep2.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());

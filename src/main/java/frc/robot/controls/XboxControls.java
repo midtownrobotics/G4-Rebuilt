@@ -53,7 +53,7 @@ public class XboxControls implements Controls {
   }
 
   @Override
-  public Trigger snowBlow() {
+  public Trigger dump() {
     return controller.rightTrigger();
   }
 

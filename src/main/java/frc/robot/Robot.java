@@ -186,6 +186,7 @@ public class Robot extends LoggedRobot {
     m_controls.feedFuel().whileTrue(m_robotCommands.feedFuel());
     m_controls.increaseHoodAngle().onTrue(m_robotCommands.increaseHoodAngle());
     m_controls.decreaseHoodAngle().onTrue(m_robotCommands.decreaseHoodAngle());
+    m_controls.dump().whileTrue(m_robotCommands.dump());
 
     // G4 does not yet expose the G3 homing routines, so the matching chords return to the
     // known mechanism reference positions.
