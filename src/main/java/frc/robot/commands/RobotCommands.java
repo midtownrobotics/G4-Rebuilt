@@ -94,7 +94,7 @@ public class RobotCommands {
   }
 
   public Command dump() {
-    return Commands.parallel(alignToHub(), shoot()).withName("dump");
+    return Commands.sequence(alignToHub(), shoot()).withName("dump");
   }
 
   public Command idle() {
