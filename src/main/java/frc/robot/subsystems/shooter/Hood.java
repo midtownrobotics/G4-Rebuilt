@@ -114,7 +114,7 @@ public class Hood extends SubsystemBase {
   }
 
   public Command setVoltageCommand(Voltage voltage) {
-    return run(() -> io.setVoltage(voltage));
+    return run(() -> io.setVoltage(voltage)).finallyDo(io::stop);
   }
 
   public void setEncoderPosition(Angle angle) {

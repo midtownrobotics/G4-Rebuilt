@@ -34,7 +34,7 @@ public class IntakeRoller extends SubsystemBase {
   }
 
   public Command setVoltageCommand(Voltage voltage) {
-    return run(() -> setVoltage(voltage));
+    return run(() -> setVoltage(voltage)).finallyDo(this::stop);
   }
 
   public void stop() {
