@@ -2,11 +2,11 @@ package frc.robot.commands;
 
 import static edu.wpi.first.units.Units.Volts;
 
+import frc.robot.constants.Constants;
+
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
-import frc.robot.constants.Constants;
 import frc.robot.controls.Controls;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.feeder.Feeder;
@@ -126,15 +126,12 @@ public class RobotCommands {
     return m_hood.setMinimumAngleCommand().withName("zeroHood");
   }
 
-  public Command disableShooting() {
+  public Command stopShooting() {
     return Commands.parallel(m_flywheel.stopCommand(), m_feeder.stopCommand())
         .withName("disableShooting");
   }
 
   public Command revFlyweel() {
-    return m_flywheel
-        .setVoltageCommand(Constants.kFlywheelVolts)
-        .finallyDo(() -> m_flywheel.stop())
-        .withName("revFlyweel");
+    return m_flywheel.setVoltageCommand(Constants.kFlywheelVolts).finallyDo(() -> m_flywheel.stop());
   }
 }

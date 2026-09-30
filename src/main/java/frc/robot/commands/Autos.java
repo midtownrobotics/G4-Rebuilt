@@ -65,16 +65,16 @@ public final class Autos {
     AutoTrajectory TrenchSweep2 = routine.trajectory("TrenchSweep").mirrorY();
     AutoTrajectory BackwardsBump = routine.trajectory("BackwardsBump").mirrorY();
     AutoTrajectory BackwardsBump2 = routine.trajectory("BackwardsBump").mirrorY();
-    AutoTrajectory BumpToTrenchSOTM = routine.trajectory("BumpToTrenchSOTM").mirrorY();
+    AutoTrajectory BumpToTrenchSOTM = routine.trajectory("BumpToTrench").mirrorY();
 
     TrenchSweep.active().onTrue(m_robotCommands.runIntake());
     TrenchSweep.atTime("startintake").onTrue(m_robotCommands.runIntake());
     TrenchSweep.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
     TrenchSweep.done().onTrue(BackwardsBump.cmd());
 
-    BackwardsBump.done().onTrue(BumpToTrenchSOTM.cmd());
+    BackwardsBump.done().onTrue(m_robotCommands.shoot());
+    BackwardsBump.doneDelayed(7.5).onTrue(BumpToTrenchSOTM.cmd().alongWith(m_robotCommands.stopShooting()));
 
-    BumpToTrenchSOTM.active().onTrue(m_robotCommands.shoot().until(BumpToTrenchSOTM.atTime("stopshoot")));
     BumpToTrenchSOTM.done().onTrue(TrenchSweep2.cmd());
 
     TrenchSweep2.atTime("startintake").onTrue(m_robotCommands.runIntake());

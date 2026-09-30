@@ -191,7 +191,7 @@ public class Robot extends LoggedRobot {
     // known mechanism reference positions.
     m_controls.zeroIntake().onTrue(m_robotCommands.zeroIntake());
     m_controls.zeroHood().onTrue(m_robotCommands.zeroHood());
-    m_controls.disableShooting().whileTrue(m_robotCommands.disableShooting());
+    m_controls.disableShooting().whileTrue(m_robotCommands.stopShooting());
   }
 
   @Override
