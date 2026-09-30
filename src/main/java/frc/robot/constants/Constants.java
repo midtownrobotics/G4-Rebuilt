@@ -47,7 +47,8 @@ public class Constants {
 
   public static final boolean kUseWeirdSnakeDrive = false;
 
-  public static final Angle kFixedTurretRotation = Degrees.of(90);
+  /** Direction the fixed shooter faces relative to the robot's +X axis. */
+  public static final Angle kFixedShooterRotation = Degrees.of(90);
 
   //public static final Transform2d kRobotToTurret = new Transform2d(new Translation2d(-0.1, 0.2), new Rotation2d());
 
