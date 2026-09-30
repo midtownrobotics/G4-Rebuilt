@@ -1,8 +1,13 @@
 {
+  // NOTE: Do NOT add "java.jdt.ls.java.home" or "java.import.gradle.java.home"
+  // here. Those are absolute paths to the WPILib JDK, and the path differs per
+  // operating system (Windows: C:\Users\Public\wpilib\2026\jdk,
+  // macOS/Linux: ~/wpilib/2026/jdk), so committing one breaks everyone else.
+  // Set them once in your own VS Code USER settings instead
+  // (Cmd/Ctrl+Shift+P -> "Preferences: Open User Settings (JSON)").
+  // See JDK-SETUP.md in the repo root.
   "java.configuration.updateBuildConfiguration": "automatic",
   "java.server.launchMode": "Standard",
-  "java.jdt.ls.java.home": "C:\\Users\\Public\\wpilib\\2026\\jdk",
-  "java.import.gradle.java.home": "C:\\Users\\Public\\wpilib\\2026\\jdk",
   "java.import.gradle.wrapper.enabled": true,
   "java.import.gradle.annotationProcessing.enabled": false,
   "java.completion.favoriteStaticMembers": [
