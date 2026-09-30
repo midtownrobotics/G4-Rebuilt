@@ -57,7 +57,6 @@ public class Robot extends LoggedRobot {
   private static final CANBus kMechanismCANBus = new CANBus("rio");
 
   private Command m_autonomousCommand;
-  private AutoChooser m_chooser;
 
   private final Controls m_controls = new XboxControls(0);
   private final Drive m_drivetrain;
@@ -70,7 +69,7 @@ public class Robot extends LoggedRobot {
   private final RobotCommands m_robotCommands;
 
   private final AutoFactory m_autoFactory;
-  private final AutoRoutines m_autoRoutines;
+  private final Autos m_autos;
   private final AutoChooser m_autoChooser;
 
   private int m_canBusCounter;
@@ -164,7 +163,7 @@ public class Robot extends LoggedRobot {
             m_drivetrain::followPath,
             true,
             m_drivetrain);
-    m_autoRoutines = new AutoRoutines(m_autoFactory, m_drivetrain, m_robotCommands);
+    m_autos = new Autos(m_autoFactory, m_drivetrain, m_robotCommands);
     m_autoChooser = new AutoChooser("Do Nothing");
 
     generateAutoChooser();
@@ -238,16 +237,16 @@ public class Robot extends LoggedRobot {
   public void autonomousInit() {}
 
   private void generateAutoChooser() {
-    m_chooser = new AutoChooser();
-    Autos autos = new Autos(m_drivetrain, m_intakePivot);
-    m_chooser.addRoutine("Madtown Left", autos::MadtownLeft);
-    m_chooser.addRoutine("Madtown Right", autos::MadtownRight);
-    m_chooser.addRoutine("Hub Swipe Left", autos::HubSwipeLeft);
-    m_chooser.addRoutine("Hub Swipe Right", autos::HubSwipeRight);
-    m_chooser.addRoutine("1002 Left", autos::copy1002left);
-    m_chooser.addRoutine("1002 Right", autos::copy1002right);
-    RobotModeTriggers.autonomous().whileTrue(m_chooser.selectedCommandScheduler());
-    SmartDashboard.putData("Auto Chooser", m_chooser);
+    m_autoChooser.addRoutine("Madtown Left", m_autos::MadtownLeft);
+    m_autoChooser.addRoutine("Madtown Right", m_autos::MadtownRight);
+    m_autoChooser.addRoutine("Hub Swipe Left", m_autos::HubSwipeLeft);
+    m_autoChooser.addRoutine("Hub Swipe Right", m_autos::HubSwipeRight);
+    m_autoChooser.addRoutine("1002 Left", m_autos::copy1002left);
+    m_autoChooser.addRoutine("1002 Right", m_autos::copy1002right);
+    m_autoChooser.addRoutine("match 13 depot", m_autos::match13Depot);
+    m_autoChooser.addRoutine("right hub clean up", m_autos::rightHubCleanUp);
+    RobotModeTriggers.autonomous().whileTrue(m_autoChooser.selectedCommandScheduler());
+    SmartDashboard.putData("Auto Chooser", m_autoChooser);
   }
 
   @Override

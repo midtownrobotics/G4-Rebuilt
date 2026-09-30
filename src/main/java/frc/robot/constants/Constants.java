@@ -5,6 +5,7 @@ import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.Volts;
 
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -58,4 +59,6 @@ public class Constants {
 
   public static final Distance kRobotWidthWithBumpers = Inches.of(38.438);
   public static final Distance kRobotLengthWithBumpers = Inches.of(31.256);
+
+  public static final int kFlywheelVolts
 }
