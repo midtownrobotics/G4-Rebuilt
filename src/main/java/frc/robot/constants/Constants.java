@@ -14,6 +14,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
+import edu.wpi.first.units.measure.Voltage;
 import frc.lib.GeometryUtil;
 import frc.robot.generated.TunerConstants;
 
@@ -60,5 +61,5 @@ public class Constants {
   public static final Distance kRobotWidthWithBumpers = Inches.of(38.438);
   public static final Distance kRobotLengthWithBumpers = Inches.of(31.256);
 
-  public static final int kFlywheelVolts
+  public static final Voltage kFlywheelVolts = Volts.of(12);
 }
