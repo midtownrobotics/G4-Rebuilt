@@ -6,6 +6,8 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -61,7 +63,7 @@ public class RobotCommands {
                       m_controls.getDriveRotation() * m_drive.getMaxAngularSpeedRadPerSec());
               m_drive.runVelocity(
                   ChassisSpeeds.fromFieldRelativeSpeeds(
-                      fieldRelativeSpeeds, m_drive.getRotation()));
+                      fieldRelativeSpeeds, getDriverRelativeRotation()));
             })
         .withName("driveCommand");
   }
@@ -88,10 +90,19 @@ public class RobotCommands {
                       omegaRadiansPerSecond);
               m_drive.runVelocity(
                   ChassisSpeeds.fromFieldRelativeSpeeds(
-                      fieldRelativeSpeeds, m_drive.getRotation()));
+                      fieldRelativeSpeeds, getDriverRelativeRotation()));
             })
         .beforeStarting(headingController::reset)
         .withName("alignToHub");
+  }
+
+  /**
+   * Returns the robot heading as seen from the driver station. The pose is always blue-origin, so
+   * on the red alliance "forward" on the stick must map to -X on the field.
+   */
+  private Rotation2d getDriverRelativeRotation() {
+    boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+    return isRed ? m_drive.getRotation().plus(Rotation2d.kPi) : m_drive.getRotation();
   }
 
   private Rotation2d getHubTargetHeading() {
