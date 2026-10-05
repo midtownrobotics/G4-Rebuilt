@@ -1,13 +1,11 @@
 package frc.robot.commands;
 
-import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -134,21 +132,11 @@ public class RobotCommands {
   }
 
   public Command dump() {
-    return alignToHub().withName("dump");
-  }
-
-  /** Aligns in place, shoots for the requested duration, then stops every involved subsystem. */
-  public Command dump(double shootingDurationSeconds) {
-    return dump(Seconds.of(shootingDurationSeconds));
-  }
-
-  /** Aligns in place, shoots for the requested duration, then stops every involved subsystem. */
-  public Command dump(Time shootingDuration) {
     Trigger stablyAligned = aligned().debounce(0.1);
     return Commands.sequence(
             alignToHub(false).until(stablyAligned),
-            Commands.parallel(alignToHub(false), shoot()).withTimeout(shootingDuration))
-        .withName("timedDump");
+            Commands.parallel(alignToHub(false), shoot()))
+        .withName("dump");
   }
 
   public Command idle() {

@@ -17,7 +17,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.Autos;
 import frc.robot.controls.Controls;
 import frc.robot.controls.XboxControls;
@@ -185,11 +184,7 @@ public class Robot extends LoggedRobot {
     m_controls.feedFuel().whileTrue(m_robotCommands.feedFuel());
     m_controls.increaseHoodAngle().onTrue(m_robotCommands.increaseHoodAngle());
     m_controls.decreaseHoodAngle().onTrue(m_robotCommands.decreaseHoodAngle());
-    Trigger dump = m_controls.dump();
-    dump.whileTrue(m_robotCommands.dump());
-    dump.and(m_robotCommands.aligned().debounce(0.1))
-        .and(m_controls.disableShooting().negate())
-        .whileTrue(m_robotCommands.shoot());
+    m_controls.dump().whileTrue(m_robotCommands.dump());
 
     // G4 does not yet expose the G3 homing routines, so the matching chords return to the
     // known mechanism reference positions.
