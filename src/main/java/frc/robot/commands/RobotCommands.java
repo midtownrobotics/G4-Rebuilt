@@ -1,11 +1,13 @@
 package frc.robot.commands;
 
+import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -69,6 +71,10 @@ public class RobotCommands {
   }
 
   public Command alignToHub() {
+    return alignToHub(true);
+  }
+
+  private Command alignToHub(boolean allowDriverTranslation) {
     PIDController headingController = new PIDController(7.0, 0.0, 0.0);
     headingController.enableContinuousInput(-Math.PI, Math.PI);
 
@@ -85,14 +91,20 @@ public class RobotCommands {
 
               ChassisSpeeds fieldRelativeSpeeds =
                   new ChassisSpeeds(
-                      m_controls.getDriveForward() * m_drive.getMaxLinearSpeedMetersPerSec(),
-                      m_controls.getDriveLeft() * m_drive.getMaxLinearSpeedMetersPerSec(),
+                      allowDriverTranslation
+                          ? m_controls.getDriveForward()
+                              * m_drive.getMaxLinearSpeedMetersPerSec()
+                          : 0.0,
+                      allowDriverTranslation
+                          ? m_controls.getDriveLeft() * m_drive.getMaxLinearSpeedMetersPerSec()
+                          : 0.0,
                       omegaRadiansPerSecond);
               m_drive.runVelocity(
                   ChassisSpeeds.fromFieldRelativeSpeeds(
                       fieldRelativeSpeeds, getDriverRelativeRotation()));
             })
         .beforeStarting(headingController::reset)
+        .finallyDo(m_drive::stop)
         .withName("alignToHub");
   }
 
@@ -123,6 +135,20 @@ public class RobotCommands {
 
   public Command dump() {
     return alignToHub().withName("dump");
+  }
+
+  /** Aligns in place, shoots for the requested duration, then stops every involved subsystem. */
+  public Command dump(double shootingDurationSeconds) {
+    return dump(Seconds.of(shootingDurationSeconds));
+  }
+
+  /** Aligns in place, shoots for the requested duration, then stops every involved subsystem. */
+  public Command dump(Time shootingDuration) {
+    Trigger stablyAligned = aligned().debounce(0.1);
+    return Commands.sequence(
+            alignToHub(false).until(stablyAligned),
+            Commands.parallel(alignToHub(false), shoot()).withTimeout(shootingDuration))
+        .withName("timedDump");
   }
 
   public Command idle() {
