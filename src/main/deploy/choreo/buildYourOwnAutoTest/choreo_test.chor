@@ -1,0 +1,169 @@
+{
+ "name":"choreo_test",
+ "version":2,
+ "type":"Swerve",
+ "variables":{
+  "expressions":{},
+  "poses":{
+   "aliance_back_forward":{
+    "x":{
+     "exp":"1.8980587720870972 m",
+     "val":1.8980587720870972
+    },
+    "y":{
+     "exp":"3.975580930709839 m",
+     "val":3.975580930709839
+    },
+    "heading":{
+     "exp":"0 deg",
+     "val":0.0
+    }
+   },
+   "behind_left_bump_forward":{
+    "x":{
+     "exp":"3.1276228427886963 m",
+     "val":3.1276228427886963
+    },
+    "y":{
+     "exp":"5.7187604904174805 m",
+     "val":5.7187604904174805
+    },
+    "heading":{
+     "exp":"0 deg",
+     "val":0.0
+    }
+   },
+   "behind_left_trench_forward":{
+    "x":{
+     "exp":"3.2210073471069336 m",
+     "val":3.2210073471069336
+    },
+    "y":{
+     "exp":"7.259606838226318 m",
+     "val":7.259606838226318
+    },
+    "heading":{
+     "exp":"0 deg",
+     "val":0.0
+    }
+   },
+   "in_front_left_trench_forward":{
+    "x":{
+     "exp":"5.882469177246094 m",
+     "val":5.882469177246094
+    },
+    "y":{
+     "exp":"7.352991104125977 m",
+     "val":7.352991104125977
+    },
+    "heading":{
+     "exp":"0 deg",
+     "val":0.0
+    }
+   },
+   "left_neutral_right":{
+    "x":{
+     "exp":"7.610084533691406 m",
+     "val":7.610084533691406
+    },
+    "y":{
+     "exp":"6.839375972747803 m",
+     "val":6.839375972747803
+    },
+    "heading":{
+     "exp":"-90 deg",
+     "val":-1.5707963267948966
+    }
+   },
+   "uneder_left_trench_forward":{
+    "x":{
+     "exp":"4.388315200805664 m",
+     "val":4.388315200805664
+    },
+    "y":{
+     "exp":"7.306299209594727 m",
+     "val":7.306299209594727
+    },
+    "heading":{
+     "exp":"0 deg",
+     "val":0.0
+    }
+   }
+  }
+ },
+ "config":{
+  "frontLeft":{
+   "x":{
+    "exp":"11 in",
+    "val":0.2794
+   },
+   "y":{
+    "exp":"11 in",
+    "val":0.2794
+   }
+  },
+  "backLeft":{
+   "x":{
+    "exp":"-11 in",
+    "val":-0.2794
+   },
+   "y":{
+    "exp":"11 in",
+    "val":0.2794
+   }
+  },
+  "mass":{
+   "exp":"150 lbs",
+   "val":68.0388555
+  },
+  "inertia":{
+   "exp":"6 kg m ^ 2",
+   "val":6.0
+  },
+  "gearing":{
+   "exp":"6.5",
+   "val":6.5
+  },
+  "radius":{
+   "exp":"2 in",
+   "val":0.0508
+  },
+  "vmax":{
+   "exp":"6000 RPM",
+   "val":628.3185307179587
+  },
+  "tmax":{
+   "exp":"1.2 N * m",
+   "val":1.2
+  },
+  "cof":{
+   "exp":"1.5",
+   "val":1.5
+  },
+  "bumper":{
+   "front":{
+    "exp":"16 in",
+    "val":0.4064
+   },
+   "side":{
+    "exp":"16 in",
+    "val":0.4064
+   },
+   "back":{
+    "exp":"16 in",
+    "val":0.4064
+   }
+  },
+  "differentialTrackWidth":{
+   "exp":"22 in",
+   "val":0.5588
+  }
+ },
+ "generationFeatures":[],
+ "codegen":{
+  "root":"Users/maxquinn/Desktop/G4-Rebuilt/src/main/deploy/choreo/buildYourOwnAutoTest",
+  "genVars":true,
+  "genTrajData":true,
+  "useChoreoLib":true
+ }
+}
