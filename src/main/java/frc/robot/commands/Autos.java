@@ -72,17 +72,17 @@ public final class Autos {
     TrenchSweep.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
     TrenchSweep.done().onTrue(BackwardsBump.cmd());
 
-    BackwardsBump.done().onTrue(bumpToTrenchFixedShot.cmd());
+    BackwardsBump.done().onTrue(Commands.waitSeconds(3).andThen(bumpToTrenchFixedShot.cmd()));
 
-    bumpToTrenchFixedShot.active().onTrue(
-        m_robotCommands.shoot().until(bumpToTrenchFixedShot.atTime("PrepareForSweep")));
+    BackwardsBump.done().onTrue(m_robotCommands.dump().until(bumpToTrenchFixedShot.active()));
+
     bumpToTrenchFixedShot.done().onTrue(TrenchSweep2.cmd());
 
     TrenchSweep2.atTime("startintake").onTrue(m_robotCommands.runIntake());
     TrenchSweep2.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
     TrenchSweep2.done().onTrue(BackwardsBump2.cmd());
 
-    BackwardsBump2.done().onTrue(m_robotCommands.shoot());
+    BackwardsBump2.done().onTrue(m_robotCommands.dump());
 
     routine.active().onTrue(
         Commands.sequence(
@@ -104,10 +104,9 @@ public final class Autos {
     TrenchSweep.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
     TrenchSweep.done().onTrue(BackwardsBump.cmd());
 
-    BackwardsBump.done().onTrue(bumpToTrenchFixedShot.cmd());
+    BackwardsBump.done().onTrue(Commands.waitSeconds(3).andThen(bumpToTrenchFixedShot.cmd()));
 
-    bumpToTrenchFixedShot.active().onTrue(
-        m_robotCommands.shoot().until(bumpToTrenchFixedShot.atTime("PrepareForSweep")));
+    BackwardsBump.done().onTrue(m_robotCommands.dump().until(bumpToTrenchFixedShot.active()));
 
     bumpToTrenchFixedShot.done().onTrue(TrenchSweep2.cmd());
 
@@ -115,7 +114,7 @@ public final class Autos {
     TrenchSweep2.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
     TrenchSweep2.done().onTrue(BackwardsBump2.cmd());
 
-    BackwardsBump2.done().onTrue(m_robotCommands.shoot());
+    BackwardsBump2.done().onTrue(m_robotCommands.dump());
 
     routine.active().onTrue(
         Commands.sequence(
@@ -131,7 +130,7 @@ public final class Autos {
     HubSwipe.active().onTrue(m_robotCommands.runIntake().asProxy());
     HubSwipe.atTime("startintake").onTrue(m_robotCommands.runIntake());
     HubSwipe.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
-    HubSwipe.done().onTrue(m_robotCommands.shoot());
+    HubSwipe.done().onTrue(m_robotCommands.dump());
 
     routine.active().onTrue(
         Commands.sequence(
@@ -148,7 +147,7 @@ public final class Autos {
     HubSwipe.active().onTrue(m_robotCommands.runIntake().asProxy());
     HubSwipe.atTime("startintake").onTrue(m_robotCommands.runIntake());
     HubSwipe.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
-    HubSwipe.done().onTrue(m_robotCommands.shoot());
+    HubSwipe.done().onTrue(m_robotCommands.dump());
 
     routine.active().onTrue(
         Commands.sequence(
@@ -168,7 +167,7 @@ public final class Autos {
     copy1002left.active().onTrue(m_robotCommands.runIntake().asProxy());
     copy1002left.atTime("startintake").onTrue(m_robotCommands.runIntake());
     copy1002left.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
-    copy1002left.done().onTrue(m_robotCommands.shoot().until(trenchLineUp1002.active()));
+    copy1002left.done().onTrue(m_robotCommands.dump().until(trenchLineUp1002.active()));
     copy1002left.doneDelayed(5).onTrue(trenchLineUp1002.cmd());
 
     trenchLineUp1002.done().onTrue(copy1002left2.cmd());
@@ -176,7 +175,7 @@ public final class Autos {
     copy1002left2.active().onTrue(m_robotCommands.runIntake().asProxy());
     copy1002left2.atTime("startintake").onTrue(m_robotCommands.runIntake());
     copy1002left2.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
-    copy1002left2.done().onTrue(m_robotCommands.shoot());
+    copy1002left2.done().onTrue(m_robotCommands.dump());
 
     routine.active().onTrue(
         Commands.sequence(
@@ -194,7 +193,7 @@ public final class Autos {
     copy1002left.active().onTrue(m_robotCommands.runIntake().asProxy());
     copy1002left.atTime("startintake").onTrue(m_robotCommands.runIntake());
     copy1002left.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
-    copy1002left.done().onTrue(m_robotCommands.shoot().until(trenchLineUp1002.active()));
+    copy1002left.done().onTrue(m_robotCommands.dump().until(trenchLineUp1002.active()));
     copy1002left.doneDelayed(5).onTrue(trenchLineUp1002.cmd());
 
     trenchLineUp1002.done().onTrue(copy1002left2.cmd());
@@ -202,7 +201,7 @@ public final class Autos {
     copy1002left2.active().onTrue(m_robotCommands.runIntake().asProxy());
     copy1002left2.atTime("startintake").onTrue(m_robotCommands.runIntake());
     copy1002left2.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
-    copy1002left2.done().onTrue(m_robotCommands.shoot());
+    copy1002left2.done().onTrue(m_robotCommands.dump());
 
     routine.active().onTrue(
         Commands.sequence(
@@ -211,13 +210,13 @@ public final class Autos {
     return routine;
   }
 
-  public AutoRoutine match13Depot() {
-    AutoRoutine routine = m_factory.newRoutine("match13Depot");
+  public AutoRoutine centerDepot() {
+    AutoRoutine routine = m_factory.newRoutine("centerDepot");
     AutoTrajectory CenterDepot = routine.trajectory("CenterDepot");
 
     CenterDepot.active().onTrue(m_robotCommands.runIntake());
     CenterDepot.active().onTrue(m_robotCommands.revFlyweel());
-    CenterDepot.done().onTrue(m_robotCommands.shoot().withTimeout(Seconds.of(8)));
+    CenterDepot.done().onTrue(m_robotCommands.dump().withTimeout(Seconds.of(8)));
 
     routine.active().onTrue(
         Commands.sequence(
@@ -237,8 +236,8 @@ public final class Autos {
     RightHubCleanup.done().onTrue(BackwardsBump.cmd());
     BackwardsBump.atTime(0.7).onTrue(m_robotCommands.revFlyweel());
     BackwardsBump.done().onTrue(LeftBumpToDepot.cmd());
-    LeftBumpToDepot.active().onTrue(m_robotCommands.shoot().until(LeftBumpToDepot.atTime("stopShooting")));
-    LeftBumpToDepot.atTime("startShooting").onTrue(m_robotCommands.shoot());
+    LeftBumpToDepot.active().onTrue(m_robotCommands.dump().until(LeftBumpToDepot.atTime("stopShooting")));
+    LeftBumpToDepot.atTime("startShooting").onTrue(m_robotCommands.dump());
 
     routine.active().onTrue(
         Commands.sequence(
