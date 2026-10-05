@@ -9,7 +9,6 @@ import edu.wpi.first.wpilibj2.command.*;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.lib.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
-import frc.robot.subsystems.shooter.FlywheelIO;
 
 public class Flywheel extends SubsystemBase {
   private final FlywheelIO io;

@@ -25,13 +25,11 @@ import frc.robot.subsystems.drive.Drive;
 public final class Autos {
 
   private final AutoFactory m_factory;
-  private final Drive m_drive;
   private final RobotCommands m_robotCommands;
   private final LoggedTunableNumber m_hubSwipeDelaySeconds = new LoggedTunableNumber("HubSwipeDelaySeconds", 0.0);
   private final FollowPath.Builder pathBuilder;
 
   public Autos(AutoFactory autoFactory, Drive drive, RobotCommands robotCommands) {
-    m_drive = drive;
     m_factory = autoFactory;
     m_robotCommands = robotCommands;
 
@@ -72,7 +70,7 @@ public final class Autos {
     TrenchSweep.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
     TrenchSweep.done().onTrue(BackwardsBump.cmd());
 
-    BackwardsBump.done().onTrue(Commands.waitSeconds(3).andThen(bumpToTrenchFixedShot.cmd()));
+    BackwardsBump.doneDelayed(3).onTrue(bumpToTrenchFixedShot.cmd());
 
     BackwardsBump.done().onTrue(m_robotCommands.dump().until(bumpToTrenchFixedShot.active()));
 
