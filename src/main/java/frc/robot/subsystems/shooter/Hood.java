@@ -1,217 +1,143 @@
 package frc.robot.subsystems.shooter;
 
-import static edu.wpi.first.units.Units.Amps;
-import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.RPM;
-import static edu.wpi.first.units.Units.Rotations;
-import static edu.wpi.first.units.Units.Second;
-import static edu.wpi.first.units.Units.Seconds;
-import static edu.wpi.first.units.Units.Volts;
+import static edu.wpi.first.units.Units.*;
 
-import java.util.function.Supplier;
-
-import org.littletonrobotics.junction.Logger;
-
-import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
-import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
-import com.ctre.phoenix6.configs.FeedbackConfigs;
-import com.ctre.phoenix6.configs.MotionMagicConfigs;
-import com.ctre.phoenix6.configs.MotorOutputConfigs;
-import com.ctre.phoenix6.configs.OpenLoopRampsConfigs;
-import com.ctre.phoenix6.configs.Slot0Configs;
-import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.MotionMagicVoltage;
-import com.ctre.phoenix6.controls.VoltageOut;
-import com.ctre.phoenix6.hardware.CANcoder;
-import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.GravityTypeValue;
-import com.ctre.phoenix6.signals.NeutralModeValue;
-
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.LinearFilter;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.*;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.lib.LoggedTunableNumber;
+import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
 
 public class Hood extends SubsystemBase {
-  private static final double kRotorToHoodRatio = 62.0 / 14.0;
+  public static final Angle kMinimumAngle = Degrees.of(16.25), kMaximumAngle = Degrees.of(35);
+  public static final Angle kAdjustmentStep = Degrees.of(2.0);
+  private final HoodIO io;
+  private final HoodIOInputsAutoLogged inputs = new HoodIOInputsAutoLogged();
+  private final LinearFilter filter = LinearFilter.movingAverage(5);
+  private final LoggedTunableNumber p = new LoggedTunableNumber("Hood/kP", 800),
+      i = new LoggedTunableNumber("Hood/kI", 0),
+      d = new LoggedTunableNumber("Hood/kD", 18),
+      s = new LoggedTunableNumber("Hood/kS", .395),
+      v = new LoggedTunableNumber("Hood/kV", 30),
+      g = new LoggedTunableNumber("Hood/kG", .015);
+  private final Alert motorAlert = new Alert("Hood TalonFX motor disconnected", AlertType.kWarning),
+      encoderAlert = new Alert("Hood CANcoder disconnected", AlertType.kWarning),
+      stallAlert = new Alert("Hood is stalling", AlertType.kWarning);
+  private final Trigger near = new Trigger(() -> isNearSetpoint(Degrees.of(1)));
 
-  private static final Angle kMinimumAngle = Degrees.of(0); 
-  private static final Angle kMaximumAngle = Degrees.of(18.75);
-
-  private final TalonFX m_motor;
-  private final CANcoder m_encoder;
-
-  private final MotionMagicVoltage m_positionRequest = new MotionMagicVoltage(0).withEnableFOC(true);
-  private final VoltageOut m_voltageRequest = new VoltageOut(0);
-
-  private final LinearFilter m_currentSpikeFilter = LinearFilter.movingAverage(5);
-  private final Trigger m_currentSpikeTrigger;
-  private final Trigger m_isNearSetpointTrigger;
-
-  private final Alert m_motorConnectionAlert = new Alert(
-      "Hood TalonFX motor is not connected", AlertType.kWarning);
-  private final Alert m_encoderConnectionAlert = new Alert(
-      "Hood CANcoder is not connected", AlertType.kWarning);
-  private final Alert m_stallAlert = new Alert("Hood is stalling", AlertType.kWarning);
-
-  private Angle m_setpoint = Degrees.zero();
-
-  public Hood(int motorId, int encoderId) {
-    m_motor = new TalonFX(motorId);
-    m_encoder = new CANcoder(encoderId);
-
-    TalonFXConfiguration config = new TalonFXConfiguration();
-
-    config.Slot0 = new Slot0Configs()
-        .withKP(800)
-        .withKI(0)
-        .withKD(18)
-        .withKS(0.395)
-        .withKV(30)
-        .withKG(0.015)
-        .withGravityArmPositionOffset(Degrees.of(11))
-        .withGravityType(GravityTypeValue.Arm_Cosine);
-
-    config.Feedback = new FeedbackConfigs()
-        .withSensorToMechanismRatio(1.0)
-        .withRotorToSensorRatio(kRotorToHoodRatio)
-        .withFusedCANcoder(m_encoder);
-
-    config.MotorOutput = new MotorOutputConfigs()
-        .withNeutralMode(NeutralModeValue.Brake);
-
-    config.CurrentLimits = new CurrentLimitsConfigs()
-        .withStatorCurrentLimitEnable(true)
-        .withStatorCurrentLimit(Amps.of(40));
-
-    config.MotionMagic = new MotionMagicConfigs()
-        .withMotionMagicCruiseVelocity(RPM.of(600))
-        .withMotionMagicAcceleration(RPM.per(Second).of(700));
-
-    config.SoftwareLimitSwitch = createSoftLimitConfig(true);
-    config.OpenLoopRamps = new OpenLoopRampsConfigs()
-        .withVoltageOpenLoopRampPeriod(Seconds.of(0.25));
-    config.ClosedLoopRamps = new ClosedLoopRampsConfigs()
-        .withVoltageClosedLoopRampPeriod(Seconds.of(0.25));
-
-    m_motor.getConfigurator().apply(config);
-
-    m_currentSpikeTrigger = new Trigger(this::isCurrentSpiking);
-    m_isNearSetpointTrigger = new Trigger(() -> isNearSetpoint(Degrees.of(1)));
-  }
-
-  private static SoftwareLimitSwitchConfigs createSoftLimitConfig(boolean lowerLimitEnabled) {
-    return new SoftwareLimitSwitchConfigs()
-        .withForwardSoftLimitEnable(true)
-        .withForwardSoftLimitThreshold(kMaximumAngle)
-        .withReverseSoftLimitEnable(lowerLimitEnabled)
-        .withReverseSoftLimitThreshold(kMinimumAngle);
-  }
-
-  private boolean isCurrentSpiking() {
-    double filteredCurrent = m_currentSpikeFilter.calculate(m_motor.getStatorCurrent().getValue().in(Amps));
-    return filteredCurrent > 20.0;
+  public Hood(HoodIO io) {
+    this.io = io;
+    io.setPosition(kMinimumAngle);
   }
 
   @Override
   public void periodic() {
-    var encoderAbsolutePosition = m_encoder.getAbsolutePosition();
-    encoderAbsolutePosition.refresh();
-
-    m_motorConnectionAlert.set(!m_motor.isAlive());
-    m_encoderConnectionAlert.set(!encoderAbsolutePosition.getStatus().isOK());
-    m_stallAlert.set(m_motor.getStatorCurrent().getValue().gt(Amps.of(30)));
-
-    Logger.recordOutput("Hood/Position", getAngle());
-    Logger.recordOutput("Hood/AbsolutePosition", encoderAbsolutePosition.getValue());
-    Logger.recordOutput("Hood/Setpoint", m_setpoint);
-    Logger.recordOutput("Hood/CurrentSpike", isCurrentSpiking());
-    Logger.recordOutput("Hood/IsNearSetpoint", m_isNearSetpointTrigger.getAsBoolean());
+    io.updateInputs(inputs);
+    Logger.processInputs("Hood", inputs);
+    LoggedTunableNumber.ifChanged(
+        hashCode(), x -> io.setPID(x[0], x[1], x[2], x[3], x[4], x[5]), p, i, d, s, v, g);
+    double current = filter.calculate(inputs.statorCurrent.in(Amps));
+    Logger.recordOutput("Hood/CurrentSpike", current > 20);
+    Logger.recordOutput("Hood/IsNearSetpoint", near.getAsBoolean());
+    motorAlert.set(!inputs.motorConnected);
+    encoderAlert.set(!inputs.encoderConnected);
+    stallAlert.set(inputs.statorCurrent.gt(Amps.of(30)));
   }
 
   public Angle getAngle() {
-    return m_motor.getPosition().getValue();
+    return inputs.position;
   }
 
-  public Angle getSetpointAngle() {
-    return m_setpoint;
+  public Angle getAbsoluteAngle() {
+    return inputs.absolutePosition;
+  }
+
+  public Angle getAngleFromMinimum() {
+    return getAngle().minus(kMinimumAngle);
+  }
+
+  public AngularVelocity getVelocity() {
+    return inputs.velocity;
   }
 
   public boolean isNearSetpoint(Angle tolerance) {
-    return getAngle().isNear(m_setpoint, tolerance);
+    return inputs.position.isNear(inputs.setpoint, tolerance);
   }
 
   public Trigger isNearSetpointTrigger() {
-    return m_isNearSetpointTrigger;
+    return near;
   }
 
-  public Trigger getCurrentSpikeTrigger() {
-    return m_currentSpikeTrigger;
-  }
-
-  public Trigger isNearTrigger(Supplier<Angle> angle, Angle tolerance) {
-    return new Trigger(() -> getAngle().isNear(angle.get(), tolerance));
+  public Trigger isNearTrigger(Supplier<Angle> a, Angle t) {
+    return new Trigger(() -> getAngle().isNear(a.get(), t));
   }
 
   public void setAngle(Angle angle) {
-    m_setpoint = angle;
-    m_motor.setControl(m_positionRequest.withPosition(angle.in(Rotations)));
+    io.setPosition(angle);
   }
 
   public Command setAngleCommand(Angle angle) {
-    return run(() -> setAngle(angle));
+    return runOnce(() -> io.setPosition(angle));
   }
 
-  public Command setAngleCommand(Supplier<Angle> angleSupplier) {
-    return run(() -> setAngle(angleSupplier.get()));
+  public Command setAngleCommand(Supplier<Angle> a) {
+    return run(() -> io.setPosition(a.get()));
+  }
+
+  /** Moves the hood once by the requested amount, clamped to the physical angle limits. */
+  public Command adjustAngleCommand(Angle adjustment) {
+    return runOnce(
+        () -> {
+          double adjustedDegrees = getAngle().plus(adjustment).in(Degrees);
+          double clampedDegrees =
+              MathUtil.clamp(
+                  adjustedDegrees, kMinimumAngle.in(Degrees), kMaximumAngle.in(Degrees));
+          setAngle(Degrees.of(clampedDegrees));
+        });
+  }
+
+  public Command setMinimumAngleCommand() {
+    return setAngleCommand(kMinimumAngle);
+  }
+
+  public Command setMaximumAngleCommand() {
+    return setAngleCommand(kMaximumAngle);
   }
 
   public void setVoltage(Voltage voltage) {
-    m_motor.setControl(m_voltageRequest.withOutput(voltage.in(Volts)));
+    io.setVoltage(voltage);
   }
 
   public Command setVoltageCommand(Voltage voltage) {
-    return run(() -> setVoltage(voltage));
+    return run(() -> io.setVoltage(voltage)).finallyDo(io::stop);
   }
 
   public void setEncoderPosition(Angle angle) {
-    m_motor.setPosition(angle);
-    m_encoder.setPosition(angle);
+    io.setEncoderPosition(angle);
   }
 
   public Command zeroEncoderCommand() {
-    return runOnce(() -> setEncoderPosition(Degrees.zero()));
+    return runOnce(() -> io.setEncoderPosition(Degrees.zero()));
   }
 
   public void setLowerSoftLimitEnabled(boolean enabled) {
-    m_motor.getConfigurator().apply(createSoftLimitConfig(enabled));
+    io.setLowerSoftLimitEnabled(enabled);
   }
 
   public Command setLowerSoftLimitEnabledCommand(boolean enabled) {
-    return runOnce(() -> setLowerSoftLimitEnabled(enabled));
-  }
-
-  public void setPID(double kP, double kI, double kD, double kS, double kG) {
-    Slot0Configs gains = new Slot0Configs()
-        .withKP(kP)
-        .withKI(kI)
-        .withKD(kD)
-        .withKS(kS)
-        .withKG(kG)
-        .withGravityType(GravityTypeValue.Arm_Cosine);
-    m_motor.getConfigurator().apply(gains);
+    return runOnce(() -> io.setLowerSoftLimitEnabled(enabled));
   }
 
   public void stop() {
-    m_motor.stopMotor();
+    io.stop();
   }
 
   public Command stopCommand() {
-    return runOnce(this::stop);
+    return runOnce(io::stop);
   }
 }

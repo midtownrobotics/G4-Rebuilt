@@ -2,89 +2,109 @@ package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Rotations;
 
-import java.security.Key;
-
-import org.littletonrobotics.junction.AutoLog;
-import org.littletonrobotics.junction.AutoLogOutput;
-
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.MotionMagicVoltage;
-import com.ctre.phoenix6.hardware.CANcoder;
-import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.InvertedValue;
-import com.ctre.phoenix6.signals.NeutralModeValue;
-
-import edu.wpi.first.units.AngularVelocityUnit;
+import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularAcceleration;
-import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.lib.LoggedTunableNumber;
+import org.littletonrobotics.junction.Logger;
 
-public class IntakePivot {
-  private final TalonFX m_motor;
-  private final CANcoder m_encoder;
-  private final MotionMagicVoltage m_positionRequest = new MotionMagicVoltage(0);
-
-  @AutoLogOutput (key = "IntakePivot/State")
-  private State state = State.START;
-
+/** Intake pivot logic. Hardware and simulation details live behind {@link IntakePivotIO}. */
+public class IntakePivot extends SubsystemBase {
   public enum State {
-    START(Degrees.of(115)),
+    START(Degrees.of(90)),
     INTAKING(Degrees.of(0)),
     NOT_INTAKING(Degrees.of(90));
 
-    private final Angle m_angle;
+    private final Angle angle;
 
     State(Angle angle) {
-      m_angle = angle;
+      this.angle = angle;
     }
 
     public Angle angle() {
-      return m_angle;
+      return angle;
     }
   }
 
-  public IntakePivot(int motorId, int encoderId) {
-    m_motor = new TalonFX(motorId);
-    m_encoder = new CANcoder(encoderId);
+  private final IntakePivotIO io;
+  private final IntakePivotIOInputsAutoLogged inputs = new IntakePivotIOInputsAutoLogged();
+  private final LinearFilter currentFilter = LinearFilter.movingAverage(5);
+  private final Alert motorAlert =
+      new Alert("IntakePivot TalonFX motor is not connected", AlertType.kWarning);
+  private final Alert encoderAlert =
+      new Alert("IntakePivot CANcoder is not connected", AlertType.kWarning);
+  private final Alert stallAlert = new Alert("IntakePivot is stalling", AlertType.kWarning);
 
-    TalonFXConfiguration config = new TalonFXConfiguration();
-    config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
-    config.Feedback.SensorToMechanismRatio = 0.0237;
-    config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+  private final LoggedTunableNumber kP = new LoggedTunableNumber("IntakePivot/kP", 0.0);
+  private final LoggedTunableNumber kI = new LoggedTunableNumber("IntakePivot/kI", 0.0);
+  private final LoggedTunableNumber kD = new LoggedTunableNumber("IntakePivot/kD", 0.0);
+  private final LoggedTunableNumber kS = new LoggedTunableNumber("IntakePivot/kS", 0.0);
+  private final LoggedTunableNumber kG = new LoggedTunableNumber("IntakePivot/kG", 0.0);
 
-    config.CurrentLimits.StatorCurrentLimit = Amps.of(120).in(Amps);
-    config.CurrentLimits.StatorCurrentLimitEnable = true;
-    config.CurrentLimits.SupplyCurrentLimit = Amps.of(70).in(Amps);
-    config.CurrentLimits.SupplyCurrentLimitEnable = true;
+  private State state = State.START;
 
-    config.SoftwareLimitSwitch.ForwardSoftLimitThreshold = Degrees.of(90).in(Rotations);
-    config.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+  public IntakePivot(IntakePivotIO io) {
+    this.io = io;
+    setState(State.START);
+  }
 
-    m_motor.getConfigurator().apply(config);
+  @Override
+  public void periodic() {
+    io.updateInputs(inputs);
+    Logger.processInputs("IntakePivot", inputs);
+
+    LoggedTunableNumber.ifChanged(
+        hashCode(),
+        values -> io.setPID(values[0], values[1], values[2], values[3], values[4]),
+        kP,
+        kI,
+        kD,
+        kS,
+        kG);
+
+    double filteredCurrent = currentFilter.calculate(inputs.statorCurrent.in(Amps));
+    Logger.recordOutput("IntakePivot/State", state);
+    Logger.recordOutput("IntakePivot/CurrentSpike", filteredCurrent > 20.0);
+    motorAlert.set(!inputs.motorConnected);
+    encoderAlert.set(!inputs.encoderConnected);
+    stallAlert.set(inputs.statorCurrent.gt(Amps.of(30)));
   }
 
   public void setAngle(Angle angle) {
-    m_motor.setControl(m_positionRequest.withPosition(angle.in(Rotations)));
+    io.setPosition(angle);
   }
 
-  @AutoLogOutput (key = "IntakePivot/Angle")
+  public void setState(State state) {
+    this.state = state;
+    setAngle(state.angle());
+  }
+
+  public Command setStateCommand(State state) {
+    return runOnce(() -> setState(state));
+  }
+
+  public Command setAngleCommand(Angle angle) {
+    return runOnce(() -> setAngle(angle));
+  }
+
   public Angle getAngle() {
-    return m_encoder.getAbsolutePosition().getValue();
-  }
-
-  @AutoLogOutput (key = "IntakePivot/Voltage")
-  public Voltage getVoltage() {
-    return m_encoder.getSupplyVoltage();
-  }
-
-  @AutoLogOutput (key = "IntakePivot/AngularVelocity")
-  public AngularVelocity getVelocity() {
-    return m_encoder.getVelocity();
+    return inputs.position;
   }
 
   public void start() {
-    setAngle(State.START.angle());
+    setState(State.START);
+  }
+
+  public void stop() {
+    io.stop();
+  }
+
+  public Command stopCommand() {
+    return Commands.runOnce(this::stop, this);
   }
 }
