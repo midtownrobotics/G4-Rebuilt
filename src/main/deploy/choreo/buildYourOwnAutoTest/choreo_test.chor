@@ -5,24 +5,66 @@
  "variables":{
   "expressions":{},
   "poses":{
-   "aliance_back_forward":{
+   "alliance_back_shoot":{
     "x":{
      "exp":"1.8980587720870972 m",
      "val":1.8980587720870972
     },
     "y":{
-     "exp":"3.975580930709839 m",
-     "val":3.975580930709839
+     "exp":"4.0346 m",
+     "val":4.0346
     },
     "heading":{
-     "exp":"0 deg",
-     "val":0.0
+     "exp":"180 deg",
+     "val":3.141592653589793
+    }
+   },
+   "alliance_left_shoot":{
+    "x":{
+     "exp":"2 m",
+     "val":2.0
+    },
+    "y":{
+     "exp":"6.481401443481445 m",
+     "val":6.481401443481445
+    },
+    "heading":{
+     "exp":"137.019010923 deg",
+     "val":2.3914328784324246
+    }
+   },
+   "alliance_right_shoot":{
+    "x":{
+     "exp":"2 m",
+     "val":2.0
+    },
+    "y":{
+     "exp":"1.5877985565 m",
+     "val":1.5877985565
+    },
+    "heading":{
+     "exp":"-137.019010923 deg",
+     "val":-2.3914328784324246
+    }
+   },
+   "behind_left_bump_backward":{
+    "x":{
+     "exp":"3.62 m",
+     "val":3.62
+    },
+    "y":{
+     "exp":"5.7187604904174805 m",
+     "val":5.7187604904174805
+    },
+    "heading":{
+     "exp":"180 deg",
+     "val":3.141592653589793
     }
    },
    "behind_left_bump_forward":{
     "x":{
-     "exp":"3.1276228427886963 m",
-     "val":3.1276228427886963
+     "exp":"3.62 m",
+     "val":3.62
     },
     "y":{
      "exp":"5.7187604904174805 m",
@@ -31,6 +73,20 @@
     "heading":{
      "exp":"0 deg",
      "val":0.0
+    }
+   },
+   "behind_left_trench_backward":{
+    "x":{
+     "exp":"3.2210073471069336 m",
+     "val":3.2210073471069336
+    },
+    "y":{
+     "exp":"7.259606838226318 m",
+     "val":7.259606838226318
+    },
+    "heading":{
+     "exp":"180 deg",
+     "val":3.141592653589793
     }
    },
    "behind_left_trench_forward":{
@@ -47,6 +103,118 @@
      "val":0.0
     }
    },
+   "behind_right_bump_backward":{
+    "x":{
+     "exp":"3.62 m",
+     "val":3.62
+    },
+    "y":{
+     "exp":"2.3504395096 m",
+     "val":2.3504395096
+    },
+    "heading":{
+     "exp":"180 deg",
+     "val":3.141592653589793
+    }
+   },
+   "behind_right_bump_forward":{
+    "x":{
+     "exp":"3.62 m",
+     "val":3.62
+    },
+    "y":{
+     "exp":"2.3504395096 m",
+     "val":2.3504395096
+    },
+    "heading":{
+     "exp":"0 deg",
+     "val":0.0
+    }
+   },
+   "behind_right_trench_backward":{
+    "x":{
+     "exp":"3.2210073471069336 m",
+     "val":3.2210073471069336
+    },
+    "y":{
+     "exp":"0.8095931618 m",
+     "val":0.8095931618
+    },
+    "heading":{
+     "exp":"180 deg",
+     "val":3.141592653589793
+    }
+   },
+   "behind_right_trench_forward":{
+    "x":{
+     "exp":"3.2210073471069336 m",
+     "val":3.2210073471069336
+    },
+    "y":{
+     "exp":"0.8095931618 m",
+     "val":0.8095931618
+    },
+    "heading":{
+     "exp":"0 deg",
+     "val":0.0
+    }
+   },
+   "depot_backward":{
+    "x":{
+     "exp":"0.43503308296203613 m",
+     "val":0.43503308296203613
+    },
+    "y":{
+     "exp":"5.952221870422363 m",
+     "val":5.952221870422363
+    },
+    "heading":{
+     "exp":"180 deg",
+     "val":3.141592653589793
+    }
+   },
+   "in_front_left_bump_backward":{
+    "x":{
+     "exp":"5.898033142089844 m",
+     "val":5.898033142089844
+    },
+    "y":{
+     "exp":"behind_left_bump_forward.y",
+     "val":5.7187604904174805
+    },
+    "heading":{
+     "exp":"180 deg",
+     "val":3.141592653589793
+    }
+   },
+   "in_front_left_bump_forward":{
+    "x":{
+     "exp":"5.898033142089844 m",
+     "val":5.898033142089844
+    },
+    "y":{
+     "exp":"behind_left_bump_forward.y",
+     "val":5.7187604904174805
+    },
+    "heading":{
+     "exp":"0 deg",
+     "val":0.0
+    }
+   },
+   "in_front_left_trench_backward":{
+    "x":{
+     "exp":"5.882469177246094 m",
+     "val":5.882469177246094
+    },
+    "y":{
+     "exp":"7.352991104125977 m",
+     "val":7.352991104125977
+    },
+    "heading":{
+     "exp":"180 deg",
+     "val":3.141592653589793
+    }
+   },
    "in_front_left_trench_forward":{
     "x":{
      "exp":"5.882469177246094 m",
@@ -55,6 +223,62 @@
     "y":{
      "exp":"7.352991104125977 m",
      "val":7.352991104125977
+    },
+    "heading":{
+     "exp":"0 deg",
+     "val":0.0
+    }
+   },
+   "in_front_right_bump_backward":{
+    "x":{
+     "exp":"5.898033142089844 m",
+     "val":5.898033142089844
+    },
+    "y":{
+     "exp":"behind_right_bump_forward.y",
+     "val":2.3504395096
+    },
+    "heading":{
+     "exp":"180 deg",
+     "val":3.141592653589793
+    }
+   },
+   "in_front_right_bump_forward":{
+    "x":{
+     "exp":"5.898033142089844 m",
+     "val":5.898033142089844
+    },
+    "y":{
+     "exp":"behind_right_bump_forward.y",
+     "val":2.3504395096
+    },
+    "heading":{
+     "exp":"0 deg",
+     "val":0.0
+    }
+   },
+   "in_front_right_trench_backward":{
+    "x":{
+     "exp":"5.882469177246094 m",
+     "val":5.882469177246094
+    },
+    "y":{
+     "exp":"0.7162088959 m",
+     "val":0.7162088959
+    },
+    "heading":{
+     "exp":"180 deg",
+     "val":3.141592653589793
+    }
+   },
+   "in_front_right_trench_forward":{
+    "x":{
+     "exp":"5.882469177246094 m",
+     "val":5.882469177246094
+    },
+    "y":{
+     "exp":"0.7162088959 m",
+     "val":0.7162088959
     },
     "heading":{
      "exp":"0 deg",
@@ -75,7 +299,35 @@
      "val":-1.5707963267948966
     }
    },
-   "uneder_left_trench_forward":{
+   "right_neutral_left":{
+    "x":{
+     "exp":"7.610084533691406 m",
+     "val":7.610084533691406
+    },
+    "y":{
+     "exp":"1.2298240273 m",
+     "val":1.2298240273
+    },
+    "heading":{
+     "exp":"90 deg",
+     "val":1.5707963267948966
+    }
+   },
+   "shoot_point":{
+    "x":{
+     "exp":"4.6256194 m",
+     "val":4.6256194
+    },
+    "y":{
+     "exp":"4.0346 m",
+     "val":4.0346
+    },
+    "heading":{
+     "exp":"0 deg",
+     "val":0.0
+    }
+   },
+   "under_left_trench_backward":{
     "x":{
      "exp":"4.388315200805664 m",
      "val":4.388315200805664
@@ -83,6 +335,48 @@
     "y":{
      "exp":"7.306299209594727 m",
      "val":7.306299209594727
+    },
+    "heading":{
+     "exp":"180 deg",
+     "val":3.141592653589793
+    }
+   },
+   "under_left_trench_forward":{
+    "x":{
+     "exp":"4.388315200805664 m",
+     "val":4.388315200805664
+    },
+    "y":{
+     "exp":"7.306299209594727 m",
+     "val":7.306299209594727
+    },
+    "heading":{
+     "exp":"0 deg",
+     "val":0.0
+    }
+   },
+   "under_right_trench_backward":{
+    "x":{
+     "exp":"4.388315200805664 m",
+     "val":4.388315200805664
+    },
+    "y":{
+     "exp":"0.7629007904 m",
+     "val":0.7629007904
+    },
+    "heading":{
+     "exp":"180 deg",
+     "val":3.141592653589793
+    }
+   },
+   "under_right_trench_forward":{
+    "x":{
+     "exp":"4.388315200805664 m",
+     "val":4.388315200805664
+    },
+    "y":{
+     "exp":"0.7629007904 m",
+     "val":0.7629007904
     },
     "heading":{
      "exp":"0 deg",

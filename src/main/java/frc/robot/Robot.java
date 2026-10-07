@@ -3,8 +3,6 @@ package frc.robot;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.SignalLogger;
 
-import choreo.auto.AutoChooser;
-import choreo.auto.AutoFactory;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.units.Units;
@@ -16,8 +14,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
-import frc.robot.commands.Autos;
+import frc.robot.commands.CustomAuto;
 import frc.robot.controls.Controls;
 import frc.robot.controls.XboxControls;
 import frc.lib.LoggedCommandScheduler;
@@ -68,9 +65,7 @@ public class Robot extends LoggedRobot {
   private final Vision m_vision;
   private final RobotCommands m_robotCommands;
 
-  private final AutoFactory m_autoFactory;
-  private final Autos m_autos;
-  private final AutoChooser m_autoChooser;
+  private final CustomAuto m_CustomAuto;
 
   private int m_canBusCounter;
 
@@ -156,16 +151,6 @@ public class Robot extends LoggedRobot {
 
     configureBindings();
 
-    m_autoFactory =
-        new AutoFactory(
-            m_drivetrain::getPose,
-            m_drivetrain::resetPose,
-            m_drivetrain::followPath,
-            true,
-            m_drivetrain);
-    m_autos = new Autos(m_autoFactory, m_drivetrain, m_robotCommands);
-    m_autoChooser = new AutoChooser("Do Nothing");
-
     SmartDashboard.putData(
         "StartSignalLogger", Commands.runOnce(SignalLogger::start).ignoringDisable(true));
     SmartDashboard.putData(
@@ -173,7 +158,7 @@ public class Robot extends LoggedRobot {
 
     LoggedCommandScheduler.init(CommandScheduler.getInstance());
 
-    generateAutoChooser();
+    m_CustomAuto = new CustomAuto(m_drivetrain, m_robotCommands);
   }
 
   private void configureBindings() {
@@ -234,19 +219,6 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void autonomousInit() {}
-
-  private void generateAutoChooser() {
-    m_autoChooser.addRoutine("Madtown Left", m_autos::MadtownLeft);
-    m_autoChooser.addRoutine("Madtown Right", m_autos::MadtownRight);
-    m_autoChooser.addRoutine("Hub Swipe Left", m_autos::HubSwipeLeft);
-    m_autoChooser.addRoutine("Hub Swipe Right", m_autos::HubSwipeRight);
-    m_autoChooser.addRoutine("1002 Left", m_autos::copy1002left);
-    m_autoChooser.addRoutine("1002 Right", m_autos::copy1002right);
-    m_autoChooser.addRoutine("match 13 depot", m_autos::centerDepot);
-    m_autoChooser.addRoutine("right hub clean up", m_autos::rightHubCleanUp);
-    RobotModeTriggers.autonomous().whileTrue(m_autoChooser.selectedCommandScheduler());
-    SmartDashboard.putData("Auto Chooser", m_autoChooser);
-  }
 
   @Override
   public void teleopInit() {
