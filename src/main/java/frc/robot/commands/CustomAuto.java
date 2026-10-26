@@ -3,7 +3,6 @@ import choreo.auto.AutoChooser;
 import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -11,15 +10,27 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import frc.robot.subsystems.drive.Drive;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map; 
+import java.util.Map;
+import java.util.function.Supplier;
+
+import edu.wpi.first.wpilibj.Filesystem;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 
 public class CustomAuto {
     private final AutoFactory m_autoFactory;
     private final Autos m_autos;
     private final AutoChooser m_autoChooser;
     private final RobotCommands m_robotCommands;
+    private final BLineAutos m_BLineAutos;
 
     private final SendableChooser<position> m_start_chooser = new SendableChooser<>();
     private final SendableChooser<side> m_starting_side_chooser = new SendableChooser<>();
@@ -28,14 +39,18 @@ public class CustomAuto {
 
     private Map<CustomAutoRoute, Segment> segmentMap = new LinkedHashMap<>();
 
+    private final Map<String, Supplier<Command>> commandsMap = new HashMap<>();
+    private final Map<position, String> poseMap = new HashMap<>();
+
     public CustomAuto(Drive drivetrain, RobotCommands robotCommands){
+        m_BLineAutos = new BLineAutos(drivetrain, robotCommands);
         m_autoFactory = new AutoFactory(
                 drivetrain::getPose,
                 drivetrain::resetPose,
                 drivetrain::followPath,
                 true,
                 drivetrain);
-        m_autos = new Autos(m_autoFactory, drivetrain, robotCommands);
+        m_autos = new Autos(m_autoFactory, drivetrain, robotCommands, m_BLineAutos);
         m_autoChooser = new AutoChooser("Do Nothing");
         m_robotCommands = robotCommands;
 
@@ -47,6 +62,12 @@ public class CustomAuto {
 
         generateAutoChooser();
         smartDashboardInit();
+
+        commandsMap.put("shoot", () -> Commands.sequence(m_robotCommands.dump().withTimeout(5.0)));
+
+        poseMap.put(position.TrenchStart, "CustomAuto_Trench");
+        poseMap.put(position.HubStart, "CustomAuto_Hub");
+        poseMap.put(position.Shoot, "CustomAuto_Shoot");
     }
 
     private void generateAutoChooser() {
@@ -59,6 +80,17 @@ public class CustomAuto {
         m_autoChooser.addRoutine("match 13 depot", m_autos::centerDepot);
         m_autoChooser.addRoutine("right hub clean up", m_autos::rightHubCleanUp);
         m_autoChooser.addRoutine("Custom", this::custom);
+
+        File deployDir = Filesystem.getDeployDirectory();
+        File autoJSONsFolder = new File(deployDir, "autoJSONs");
+        File[] autoJSONs = autoJSONsFolder.listFiles();
+
+        if(autoJSONs == null){return;}
+
+        for(File autoJSON: autoJSONs){
+            m_autoChooser.addRoutine(autoJSON.getName(), () -> this.customFromJson(autoJSON));
+        }
+
         RobotModeTriggers.autonomous().whileTrue(m_autoChooser.selectedCommandScheduler());
         SmartDashboard.putData("Auto Chooser", m_autoChooser);
     }
@@ -89,10 +121,6 @@ public class CustomAuto {
         SmartDashboard.putData("Custom Auto Second Path Chooser", m_second_path_chooser);
     }
 
-    private void setAutoOptions(int index){
-
-    }
-
     AutoRoutine custom(){
         AutoRoutine routine = m_autoFactory.newRoutine("Custom");
 
@@ -102,7 +130,7 @@ public class CustomAuto {
             if(segment == null){
                 continue;
             }
-            legs.add(segment.build(routine, legs.isEmpty()));
+            legs.add(segment.build(routine, legs.isEmpty(), m_starting_side_chooser.getSelected() == side.Left));
         }
 
         routine.active().onTrue(Commands.sequence(legs.toArray(Command[]::new)));
@@ -110,8 +138,55 @@ public class CustomAuto {
         return routine;
     }
 
+    AutoRoutine customFromJson(File autoFile){
+        AutoRoutine routine = m_autoFactory.newRoutine("CustomJson");
+
+        List<Command> legs = new ArrayList<>();
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(autoFile);
+
+            side pathSide = side.valueOf(root.get("side").asText());
+            position startPosition = position.valueOf(root.get("start").asText());
+
+            JsonNode stepsArray = root.get("steps");
+            if(stepsArray == null || !stepsArray.isArray()){
+                return routine;
+            }
+
+            for(JsonNode step : stepsArray){
+                String type = step.get("type").asText();
+                if(type.equals("command")){
+                    Supplier<Command> command = commandsMap.get(step.get("command").asText());
+                    if(command == null){
+                        continue;
+                    }
+                    legs.add(command.get());
+                } else if(type.equals("choreo")){
+                    position start = position.valueOf(step.get("start").asText());
+                    position end = position.valueOf(step.get("end").asText());
+                    CustomAuto.route route = CustomAuto.route.valueOf(step.get("route").asText());
+
+                    Segment segment = segmentMap.get(new CustomAutoRoute(start, end, route));
+                    if(segment == null){
+                        continue;
+                    }
+                    legs.add(segment.build(routine, legs.isEmpty(), pathSide == side.Left));
+
+                    if(step.get("blineEnd").asBoolean()){
+                        legs.add(m_BLineAutos.GoTo(poseMap.get(end), pathSide == side.Left));
+                    }
+                }
+            }
+            routine.active().onTrue(Commands.sequence(legs.toArray(Command[]::new)));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }    
+        return routine;
+    }
+
     private interface Segment {
-        Command build(AutoRoutine routine, boolean resetOdometry);
+        Command build(AutoRoutine routine, boolean resetOdometry, boolean leftSide);
     }
 
     enum position{
@@ -126,7 +201,7 @@ public class CustomAuto {
         Neutral, Depot, Shoot
     }
 
-    private Command hubDepotShoot(AutoRoutine routine, boolean resetOdometry){
+    private Command hubDepotShoot(AutoRoutine routine, boolean resetOdometry, boolean leftSide){
         AutoTrajectory HubDepotShoot = routine.trajectory("CustomAuto_HubDepotShoot");
 
         return Commands.sequence(
@@ -134,7 +209,7 @@ public class CustomAuto {
             HubDepotShoot.cmd());
     }
 
-    private Command shootDepotShoot(AutoRoutine routine, boolean resetOdometry) {
+    private Command shootDepotShoot(AutoRoutine routine, boolean resetOdometry, boolean leftSide) {
         AutoTrajectory ShootDepotShoot = routine.trajectory("CustomAuto_ShootDepotShoot");
 
         return Commands.sequence(
@@ -142,15 +217,15 @@ public class CustomAuto {
                 ShootDepotShoot.cmd());
     }
 
-    private Command shoot(AutoRoutine routine, boolean resetOdometry){
+    private Command shoot(AutoRoutine routine, boolean resetOdometry, boolean leftSide){
         return Commands.sequence(
             m_robotCommands.dump().withTimeout(5.0));
     }
 
-    private Command trenchNeutralShoot(AutoRoutine routine, boolean resetOdometry) {
+    private Command trenchNeutralShoot(AutoRoutine routine, boolean resetOdometry, boolean leftSide) {
         AutoTrajectory TrenchNeutralShoot = routine.trajectory("CustomAuto_TrenchNeutralShoot");
 
-        if (m_starting_side_chooser.getSelected() == side.Right) {
+        if (!leftSide) {
             TrenchNeutralShoot = TrenchNeutralShoot.mirrorY();
         }
 
@@ -159,10 +234,10 @@ public class CustomAuto {
                 TrenchNeutralShoot.cmd());
     }
 
-    private Command shootNeutralShoot(AutoRoutine routine, boolean resetOdometry) {
+    private Command shootNeutralShoot(AutoRoutine routine, boolean resetOdometry, boolean leftSide) {
         AutoTrajectory ShootNeutralShoot = routine.trajectory("CustomAuto_ShootNeutralShoot");
 
-        if (m_starting_side_chooser.getSelected() == side.Right) {
+        if (!leftSide) {
             ShootNeutralShoot = ShootNeutralShoot.mirrorY();
         }
 

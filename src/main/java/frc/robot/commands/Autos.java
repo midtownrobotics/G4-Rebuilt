@@ -26,10 +26,10 @@ public final class Autos {
   private final FollowPath.Builder pathBuilder;
   private final BLineAutos m_BLineAutos;
 
-  public Autos(AutoFactory autoFactory, Drive drive, RobotCommands robotCommands) {
+  public Autos(AutoFactory autoFactory, Drive drive, RobotCommands robotCommands, BLineAutos bLineAutos) {
     m_factory = autoFactory;
     m_robotCommands = robotCommands;
-    m_BLineAutos = new BLineAutos(drive, robotCommands);
+    m_BLineAutos = bLineAutos;
 
     Path.setDefaultGlobalConstraints(
       new Path.DefaultGlobalConstraints(

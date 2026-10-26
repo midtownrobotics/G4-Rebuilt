@@ -1,0 +1,28 @@
+{
+    "start": "TrenchStart",
+    "side": "Left",
+    "steps": [
+        {
+            "type": "choreo",
+            "start": "TrenchStart",
+            "end": "Shoot",
+            "route": "Neutral",
+            "blineEnd": true
+        },
+        {
+            "type": "command",
+            "command": "shoot"
+        },
+        {
+            "type": "choreo",
+            "start": "Shoot",
+            "end": "Shoot",
+            "route": "Neutral",
+            "blineEnd": true
+        },
+        {
+            "type": "command",
+            "command": "shoot"
+        }
+    ]
+}
