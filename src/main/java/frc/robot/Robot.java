@@ -14,10 +14,11 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
-import frc.robot.commands.CustomAuto;
 import frc.robot.controls.Controls;
 import frc.robot.controls.XboxControls;
 import frc.lib.LoggedCommandScheduler;
+import frc.robot.commands.BLineAutos;
+import frc.robot.commands.CustomAuto;
 import frc.robot.commands.RobotCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
@@ -64,8 +65,7 @@ public class Robot extends LoggedRobot {
   private final Feeder m_feeder;
   private final Vision m_vision;
   private final RobotCommands m_robotCommands;
-
-  private final CustomAuto m_CustomAuto;
+  private final CustomAuto m_customAuto;
 
   private int m_canBusCounter;
 
@@ -158,7 +158,7 @@ public class Robot extends LoggedRobot {
 
     LoggedCommandScheduler.init(CommandScheduler.getInstance());
 
-    m_CustomAuto = new CustomAuto(m_drivetrain, m_robotCommands);
+    m_customAuto = new CustomAuto(m_drivetrain, m_robotCommands);
   }
 
   private void configureBindings() {
@@ -218,7 +218,8 @@ public class Robot extends LoggedRobot {
   }
 
   @Override
-  public void autonomousInit() {}
+  public void autonomousInit() {
+  }
 
   @Override
   public void teleopInit() {

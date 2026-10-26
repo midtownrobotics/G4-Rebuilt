@@ -1,7 +1,3 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
-
 package frc.robot.commands;
 
 import static edu.wpi.first.units.Units.Inches;
@@ -28,10 +24,12 @@ public final class Autos {
   private final RobotCommands m_robotCommands;
   private final LoggedTunableNumber m_hubSwipeDelaySeconds = new LoggedTunableNumber("HubSwipeDelaySeconds", 0.0);
   private final FollowPath.Builder pathBuilder;
+  private final BLineAutos m_BLineAutos;
 
   public Autos(AutoFactory autoFactory, Drive drive, RobotCommands robotCommands) {
     m_factory = autoFactory;
     m_robotCommands = robotCommands;
+    m_BLineAutos = new BLineAutos(drive, robotCommands);
 
     Path.setDefaultGlobalConstraints(
       new Path.DefaultGlobalConstraints(
@@ -70,9 +68,10 @@ public final class Autos {
     TrenchSweep.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
     TrenchSweep.done().onTrue(BackwardsBump.cmd());
 
-    BackwardsBump.doneDelayed(3).onTrue(bumpToTrenchFixedShot.cmd());
-
-    BackwardsBump.done().onTrue(m_robotCommands.dump().until(bumpToTrenchFixedShot.active()));
+    BackwardsBump.done().onTrue(Commands.sequence(
+      m_BLineAutos.GoTo("AllianceBumpFar", true),
+      m_robotCommands.dump().withTimeout(3),
+      bumpToTrenchFixedShot.cmd()));
 
     bumpToTrenchFixedShot.done().onTrue(TrenchSweep2.cmd());
 
@@ -80,8 +79,10 @@ public final class Autos {
     TrenchSweep2.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
     TrenchSweep2.done().onTrue(BackwardsBump2.cmd());
 
-    BackwardsBump2.done().onTrue(m_robotCommands.dump());
-
+    BackwardsBump2.done().onTrue(Commands.sequence(
+        m_BLineAutos.GoTo("AllianceBumpFar", true),
+        m_robotCommands.dump()));
+  
     routine.active().onTrue(
         Commands.sequence(
             TrenchSweep.resetOdometry(),
@@ -102,9 +103,10 @@ public final class Autos {
     TrenchSweep.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
     TrenchSweep.done().onTrue(BackwardsBump.cmd());
 
-    BackwardsBump.done().onTrue(Commands.waitSeconds(3).andThen(bumpToTrenchFixedShot.cmd()));
-
-    BackwardsBump.done().onTrue(m_robotCommands.dump().until(bumpToTrenchFixedShot.active()));
+    BackwardsBump.done().onTrue(Commands.sequence(
+        m_BLineAutos.GoTo("AllianceBumpFar", false),
+        m_robotCommands.dump().withTimeout(3),
+        bumpToTrenchFixedShot.cmd()));
 
     bumpToTrenchFixedShot.done().onTrue(TrenchSweep2.cmd());
 
@@ -112,7 +114,9 @@ public final class Autos {
     TrenchSweep2.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
     TrenchSweep2.done().onTrue(BackwardsBump2.cmd());
 
-    BackwardsBump2.done().onTrue(m_robotCommands.dump());
+    BackwardsBump2.done().onTrue(Commands.sequence(
+        m_BLineAutos.GoTo("AllianceBumpFar", false),
+        m_robotCommands.dump()));
 
     routine.active().onTrue(
         Commands.sequence(
@@ -243,5 +247,11 @@ public final class Autos {
             RightTrenchToCenterBack.resetOdometry(),
             RightTrenchToCenterBack.cmd()));
     return routine;
+  }
+
+  public void buildTrajectory(AutoTrajectory trajectory){
+    trajectory.atTime("startShooting").onTrue(m_robotCommands.dump());
+    trajectory.atTime("startintake").onTrue(m_robotCommands.runIntake());
+    trajectory.atTime("stopintake").onTrue(m_robotCommands.zeroIntake());
   }
 }

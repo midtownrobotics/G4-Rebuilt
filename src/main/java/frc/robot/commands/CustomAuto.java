@@ -3,6 +3,7 @@ import choreo.auto.AutoChooser;
 import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -169,8 +170,6 @@ public class CustomAuto {
                 resetOdometry ? ShootNeutralShoot.resetOdometry() : Commands.none(),
                 ShootNeutralShoot.cmd());
     }
-
-
 }
 
 record CustomAutoRoute(CustomAuto.position startPos, CustomAuto.position endPos, CustomAuto.route route){}
