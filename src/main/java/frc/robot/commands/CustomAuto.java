@@ -22,8 +22,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 
 public class CustomAuto {
     private final AutoFactory m_autoFactory;
@@ -147,7 +145,7 @@ public class CustomAuto {
             JsonNode root = mapper.readTree(autoFile);
 
             side pathSide = side.valueOf(root.get("side").asText());
-            position startPosition = position.valueOf(root.get("start").asText());
+            // position startPosition = position.valueOf(root.get("start").asText());
 
             JsonNode stepsArray = root.get("steps");
             if(stepsArray == null || !stepsArray.isArray()){
